@@ -99,21 +99,13 @@ export class LoginComponent {
 
     this.authService.login(username, password).subscribe({
       next: () => {
-        this.authService.verifyAdminAccess().subscribe({
-          next: () => {
-            this.loading = false;
-            this.router.navigate(['/dashboard']);
-          },
-          error: (err) => {
-            this.loading = false;
-            if (err.status === 403) {
-              this.errorMessage = 'Access denied. Admin role required.';
-              this.authService.logout();
-            } else {
-              this.errorMessage = 'Could not verify admin access. Please try again.';
-            }
-          }
-        });
+        this.loading = false;
+        if (this.authService.hasAdminRole()) {
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.errorMessage = 'Access denied. Admin role required.';
+          this.authService.logout();
+        }
       },
       error: (err) => {
         this.loading = false;

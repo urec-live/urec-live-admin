@@ -14,9 +14,9 @@ export class EquipmentService {
   private http = inject(HttpClient);
   private base = `${environment.apiUrl}/admin/equipment`;
 
-  getAll(): Observable<Equipment[]> {
+  getAll(size = 200): Observable<Equipment[]> {
     return this.http
-      .get<Equipment[] | PagedResponse<Equipment>>(this.base)
+      .get<Equipment[] | PagedResponse<Equipment>>(this.base, { params: { size } })
       .pipe(map((res) => (Array.isArray(res) ? res : res.content)));
   }
 

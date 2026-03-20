@@ -6,3 +6,6 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Fix: Tailwind preflight makes the MDC notch border visible in Angular Material outline fields */
+.mdc-notched-outline__notch { border-right: none; }

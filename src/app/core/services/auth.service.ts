@@ -14,6 +14,7 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'urec_refresh_token';
   private readonly USERNAME_KEY = 'urec_username';
   private readonly EMAIL_KEY = 'urec_email';
+  private readonly ROLES_KEY = 'urec_roles';
 
   login(username: string, password: string): Observable<AuthResponse> {
     const body: LoginRequest = { username, password };
@@ -23,12 +24,18 @@ export class AuthService {
         localStorage.setItem(this.REFRESH_TOKEN_KEY, res.refreshToken);
         localStorage.setItem(this.USERNAME_KEY, res.username);
         localStorage.setItem(this.EMAIL_KEY, res.email);
+        localStorage.setItem(this.ROLES_KEY, JSON.stringify(res.roles ?? []));
       })
     );
   }
 
-  verifyAdminAccess(): Observable<unknown> {
-    return this.http.get(`${environment.apiUrl}/admin/analytics/live`);
+  hasAdminRole(): boolean {
+    try {
+      const roles: string[] = JSON.parse(localStorage.getItem(this.ROLES_KEY) ?? '[]');
+      return roles.some((r) => r === 'ROLE_ADMIN' || r === 'ADMIN');
+    } catch {
+      return false;
+    }
   }
 
   refreshToken(): Observable<AuthResponse> {
@@ -52,6 +59,7 @@ export class AuthService {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USERNAME_KEY);
     localStorage.removeItem(this.EMAIL_KEY);
+    localStorage.removeItem(this.ROLES_KEY);
     this.router.navigate(['/login']);
   }
 

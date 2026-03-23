@@ -45,6 +45,7 @@ interface NavItem {
 export class SidebarComponent {
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
     { label: 'Exercises', icon: 'directions_run', route: '/exercises' },
     { label: 'Users', icon: 'group', route: '/users' },

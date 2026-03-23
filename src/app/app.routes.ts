@@ -38,6 +38,11 @@ export const routes: Routes = [
         path: 'activity',
         loadComponent: () =>
           import('./features/activity/activity.component').then(m => m.ActivityComponent)
+      },
+      {
+        path: 'live-monitor',
+        loadComponent: () =>
+          import('./features/dashboard/live-monitor/live-monitor.component').then(m => m.LiveMonitorComponent)
       }
     ]
   },

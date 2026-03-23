@@ -1,34 +1,49 @@
 export interface LiveSnapshot {
+  totalMachines: number;
+  occupiedMachines: number;
+  availableMachines: number;
+  reservedMachines: number;
   activeUsers: number;
-  equipmentInUse: number;
-  totalEquipment: number;
-  utilizationRate: number;
+}
+
+export interface MachineUsage {
+  machineId: number;
+  machineName: string;
+  sessionCount: number;
+  avgDurationSeconds: number;
 }
 
 export interface UsageStats {
   period: 'week' | 'month';
-  equipmentUsage: { equipmentId: number; name: string; usageCount: number }[];
+  totalSessions: number;
+  mostUsed: MachineUsage[];
+  leastUsed: MachineUsage[];
+}
+
+export interface HourlyCount {
+  hour: number;
+  count: number;
 }
 
 export interface PeakHours {
   period: 'week' | 'month';
-  hourlyData: { hour: number; count: number }[];
+  peakHours: HourlyCount[];
 }
 
 export interface UserAnalytics {
   period: 'week' | 'month';
-  newUsers: number;
-  activeUsers: number;
-  totalUsers: number;
+  totalActiveUsers: number;
+  totalNewRegistrations: number;
+  dauByDate: Record<string, number>;
+  newRegistrationsByDate: Record<string, number>;
 }
 
 export interface ActivityLogEntry {
   id: number;
-  userId: number;
+  eventType: string;
   username: string;
-  equipmentId: number;
+  description: string;
   equipmentName: string;
-  action: 'CHECK_IN' | 'CHECK_OUT';
   timestamp: string;
 }
 

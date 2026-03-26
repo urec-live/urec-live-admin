@@ -48,7 +48,7 @@ Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
         <mat-card class="stat-card">
           <mat-card-content class="pt-4">
             <div class="flex items-center gap-3">
-              <mat-icon class="text-indigo-500 text-3xl">fitness_center</mat-icon>
+              <mat-icon class="text-indigo-500" style="font-size:36px;width:36px;height:36px">fitness_center</mat-icon>
               <div>
                 <p class="text-2xl font-bold text-gray-800">{{ snapshot?.totalMachines ?? '—' }}</p>
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Total Machines</p>
@@ -60,7 +60,7 @@ Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
         <mat-card class="stat-card">
           <mat-card-content class="pt-4">
             <div class="flex items-center gap-3">
-              <mat-icon class="text-red-500 text-3xl">person</mat-icon>
+              <mat-icon class="text-red-500" style="font-size:36px;width:36px;height:36px">person</mat-icon>
               <div>
                 <p class="text-2xl font-bold text-gray-800">{{ snapshot?.occupiedMachines ?? '—' }}</p>
                 <p class="text-xs text-gray-500 uppercase tracking-wide">In Use</p>
@@ -72,7 +72,7 @@ Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
         <mat-card class="stat-card">
           <mat-card-content class="pt-4">
             <div class="flex items-center gap-3">
-              <mat-icon class="text-green-500 text-3xl">check_circle</mat-icon>
+              <mat-icon class="text-green-500" style="font-size:36px;width:36px;height:36px">check_circle</mat-icon>
               <div>
                 <p class="text-2xl font-bold text-gray-800">{{ snapshot?.availableMachines ?? '—' }}</p>
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Available</p>
@@ -84,7 +84,7 @@ Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
         <mat-card class="stat-card">
           <mat-card-content class="pt-4">
             <div class="flex items-center gap-3">
-              <mat-icon class="text-blue-500 text-3xl">group</mat-icon>
+              <mat-icon class="text-blue-500" style="font-size:36px;width:36px;height:36px">group</mat-icon>
               <div>
                 <p class="text-2xl font-bold text-gray-800">{{ snapshot?.activeUsers ?? '—' }}</p>
                 <p class="text-xs text-gray-500 uppercase tracking-wide">Active Users</p>

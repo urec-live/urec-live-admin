@@ -43,6 +43,11 @@ export const routes: Routes = [
         path: 'live-monitor',
         loadComponent: () =>
           import('./features/dashboard/live-monitor/live-monitor.component').then(m => m.LiveMonitorComponent)
+      },
+      {
+        path: 'floor-map',
+        loadComponent: () =>
+          import('./features/floor-map/floor-map-editor.component').then(m => m.FloorMapEditorComponent)
       }
     ]
   },

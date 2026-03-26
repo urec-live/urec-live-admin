@@ -47,6 +47,7 @@ export class SidebarComponent {
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
+    { label: 'Floor Map', icon: 'layers', route: '/floor-map' },
     { label: 'Exercises', icon: 'directions_run', route: '/exercises' },
     { label: 'Users', icon: 'group', route: '/users' },
     { label: 'Activity', icon: 'history', route: '/activity' }

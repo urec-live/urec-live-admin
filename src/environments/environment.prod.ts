@@ -1,5 +1,7 @@
+const backendHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+
 export const environment = {
   production: true,
-  apiUrl: 'http://172.20.1.229:8080/api',
-  wsUrl: 'http://172.20.1.229:8080/ws'
+  apiUrl: `http://${backendHost}:8080/api`,
+  wsUrl: `http://${backendHost}:8080/ws`
 };

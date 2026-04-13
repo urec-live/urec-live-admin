@@ -1,7 +1,12 @@
-const backendHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const isLocalHost = typeof window !== 'undefined'
+  ? window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  : true;
+
+const localBackend = 'http://localhost:8080';
+const railwayBackend = 'https://urec-live-backend-production.up.railway.app';
 
 export const environment = {
   production: false,
-  apiUrl: `http://${backendHost}:8080/api`,
-  wsUrl: `http://${backendHost}:8080/ws`
+  apiUrl: `${isLocalHost ? localBackend : railwayBackend}/api`,
+  wsUrl: `${isLocalHost ? localBackend : railwayBackend}/ws`
 };

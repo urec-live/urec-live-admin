@@ -109,12 +109,29 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading = false;
-        if (err.status === 401 || err.status === 400) {
-          this.errorMessage = 'Invalid username or password.';
+        // ✅ FIX: Catch ALL HTTP error statuses, not just 401/400.
+        // Spring Security may return 401, 403, or 500 for bad credentials
+        // depending on your SecurityConfig. We treat all of them as
+        // "invalid credentials" and show the inline error message.
+        const status = err?.status;
+        
+         if (status === 401 || status === 403 || status === 400) {
+          // Bad credentials returned from backend
+          this.errorMessage = 'Incorrect username or password. Please try again.';
+        } else if (status === 0 || status === undefined) {
+          // Network/CORS failure — backend unreachable
+          this.snackBar.open('Cannot reach the server. Please check your connection.', 'Dismiss', { duration: 4000 });
         } else {
-          this.snackBar.open('Network error. Please check your connection.', 'Dismiss', { duration: 4000 });
+          // Unexpected server error (500, etc.)
+          this.snackBar.open('An unexpected error occurred. Please try again later.', 'Dismiss', { duration: 4000 });
         }
       }
+        // if (err.status === 401 || err.status === 400) {
+        //   this.errorMessage = 'Invalid username or password.';
+        // } else {
+        //   this.snackBar.open('Network error. Please check your connection.', 'Dismiss', { duration: 4000 });
+        // }
+      
     });
   }
 }

@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NgChartsModule } from 'ng2-charts';
-import { ChartData, ChartOptions, Plugin } from 'chart.js';
+import { ChartData, ChartOptions } from 'chart.js';
 import {
   Chart,
   CategoryScale,
@@ -26,13 +26,13 @@ Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 // ── Gradient bar plugin ──────────────────────────────────────────────────────
 // Paints each bar with a left→right (horizontal) or bottom→top (vertical)
 // canvas gradient so the effect is visible even for long/short bars.
-const gradientBarPlugin: Plugin<'bar'> = {
+const gradientBarPlugin = {
   id: 'gradientBar',
-  beforeDatasetsDraw(chart) {
+  beforeDatasetsDraw(chart: { data?: any; getDatasetMeta?: any; options?: any; ctx?: any; chartArea?: any; }) {
     const { ctx, chartArea } = chart;
     if (!chartArea) return;
 
-    chart.data.datasets.forEach((dataset: any, datasetIndex) => {
+    chart.data.datasets.forEach((dataset: any, datasetIndex: any) => {
       const meta = chart.getDatasetMeta(datasetIndex);
       const isHorizontal = (chart.options as any).indexAxis === 'y';
 
@@ -78,6 +78,7 @@ const gradientBarPlugin: Plugin<'bar'> = {
   },
 };
 
+Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 Chart.register(gradientBarPlugin);
 
 @Component({

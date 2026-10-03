@@ -29,7 +29,8 @@ import { ActivityLogEntry, ActivitySummary } from '../../core/models/activity.mo
 
 const EVENT_TYPES = ['CHECK_IN', 'CHECK_OUT', 'SESSION_SAVED', 'REGISTRATION',
                      'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER',
-                     'ISSUE_REPORTED', 'ISSUE_STATUS_CHANGED'];
+                     'ISSUE_REPORTED', 'ISSUE_STATUS_CHANGED',
+                     'EQUIPMENT_OUT_OF_ORDER', 'EQUIPMENT_BACK_IN_SERVICE'];
 
 const DATE_PRESETS = [
   { label: 'Today',      value: 'today' },
@@ -419,6 +420,8 @@ export class ActivityComponent implements OnInit, OnDestroy {
       ADMIN_DELETE_USER: 'User Deleted',
       ISSUE_REPORTED:    'Issue Reported',
       ISSUE_STATUS_CHANGED: 'Issue Updated',
+      EQUIPMENT_OUT_OF_ORDER: 'Out of Order',
+      EQUIPMENT_BACK_IN_SERVICE: 'Back in Service',
     };
     return map[et] ?? et;
   }
@@ -434,6 +437,8 @@ export class ActivityComponent implements OnInit, OnDestroy {
       case 'ADMIN_DELETE_USER': return 'bg-red-100 text-red-700';
       case 'ISSUE_REPORTED':    return 'bg-orange-100 text-orange-700';
       case 'ISSUE_STATUS_CHANGED': return 'bg-sky-100 text-sky-700';
+      case 'EQUIPMENT_OUT_OF_ORDER': return 'bg-gray-200 text-gray-700';
+      case 'EQUIPMENT_BACK_IN_SERVICE': return 'bg-emerald-100 text-emerald-700';
       default:                  return 'bg-gray-100 text-gray-600';
     }
   }

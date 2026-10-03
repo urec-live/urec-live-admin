@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Equipment } from '../models/equipment.model';
 import {
   EquipmentIssueGroup,
   EquipmentIssueReport,
@@ -36,5 +37,10 @@ export class EquipmentIssueService {
   /** Applies the status to every open report on the machine. */
   updateMachineStatus(equipmentId: number, status: IssueStatus): Observable<EquipmentIssueGroup> {
     return this.http.put<EquipmentIssueGroup>(`${this.base}/equipment/${equipmentId}/status`, { status });
+  }
+
+  /** Takes a machine out of service (blocking check-ins) or puts it back. */
+  setOutOfOrder(equipmentId: number, outOfOrder: boolean): Observable<Equipment> {
+    return this.http.put<Equipment>(`${this.base}/equipment/${equipmentId}/out-of-order`, { outOfOrder });
   }
 }

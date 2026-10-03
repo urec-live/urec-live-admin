@@ -12,7 +12,9 @@ import {
 import { AUTO_REFRESH_MS, EquipmentIssuesComponent } from './equipment-issues.component';
 
 const NOW = new Date().toISOString();
-const SUMMARY: EquipmentIssueSummary = { reported: 1, acknowledged: 1, inProgress: 1, affectedMachines: 2 };
+const SUMMARY: EquipmentIssueSummary = {
+  reported: 1, acknowledged: 1, inProgress: 1, affectedMachines: 2, outOfOrderMachines: 1,
+};
 
 function report(overrides: Partial<EquipmentIssueReport>): EquipmentIssueReport {
   return {
@@ -31,13 +33,17 @@ function report(overrides: Partial<EquipmentIssueReport>): EquipmentIssueReport 
   };
 }
 
-/** Leg Press: one new not-working report + one acknowledged damage report. Treadmill: one repair in progress. */
-function groups(): EquipmentIssueGroup[] {
+/**
+ * Leg Press: one new not-working report + one acknowledged damage report. Treadmill: one repair in
+ * progress. Both machines are Available unless a status is given.
+ */
+function groups(machineStatus: { legPress?: string; treadmill?: string } = {}): EquipmentIssueGroup[] {
   return [
     {
       equipmentId: 10,
       equipmentName: 'Leg Press',
       equipmentCode: 'LP01',
+      equipmentStatus: machineStatus.legPress ?? 'Available',
       openReportCount: 2,
       worstSeverity: 'OUT_OF_ORDER',
       latestReportedAt: NOW,
@@ -50,6 +56,7 @@ function groups(): EquipmentIssueGroup[] {
       equipmentId: 11,
       equipmentName: 'Treadmill 3',
       equipmentCode: 'TM03',
+      equipmentStatus: machineStatus.treadmill ?? 'Available',
       openReportCount: 1,
       worstSeverity: 'DAMAGED',
       latestReportedAt: NOW,
@@ -74,7 +81,7 @@ describe('EquipmentIssuesComponent', () => {
     summary = signal<EquipmentIssueSummary | null>(null);
     service = jasmine.createSpyObj<EquipmentIssueService>(
       'EquipmentIssueService',
-      ['getGrouped', 'loadSummary', 'updateStatus', 'updateMachineStatus'],
+      ['getGrouped', 'loadSummary', 'updateStatus', 'updateMachineStatus', 'setOutOfOrder'],
       { summary },
     );
     service.getGrouped.and.callFake(() => of(groups()));
@@ -278,6 +285,111 @@ describe('EquipmentIssuesComponent', () => {
 
     expect(component.machineStatus(component.groups()[0])).toBeNull(); // REPORTED + ACKNOWLEDGED
     expect(component.machineStatus(component.groups()[1])).toBe('IN_PROGRESS');
+  });
+
+  // ── Out of order ──────────────────────────────────────────────────────────
+
+  const outOfOrderSwitch = (equipmentId: number): HTMLButtonElement =>
+    el().querySelector<HTMLButtonElement>(`[data-testid="out-of-order-toggle-${equipmentId}"] button[role="switch"]`)!;
+  const outOfOrderChip = (equipmentId: number): Element | null =>
+    el().querySelector(`[data-testid="machine-${equipmentId}"] [data-testid="out-of-order-chip"]`);
+
+  it('shows how many machines are out of order under "Machines affected"', () => {
+    render();
+    expect(text('[data-testid="stat-out-of-order"]')).toBe('1 out of order');
+
+    summary.set({ ...SUMMARY, outOfOrderMachines: 0 });
+    fixture.detectChanges();
+    expect(el().querySelector('[data-testid="stat-out-of-order"]')).toBeNull();
+  });
+
+  it('marks out-of-order machines in their header and switch', () => {
+    service.getGrouped.and.returnValue(of(groups({ legPress: 'Out of Order' })));
+    render();
+
+    expect(outOfOrderChip(10)).not.toBeNull();
+    expect(outOfOrderSwitch(10).getAttribute('aria-checked')).toBe('true');
+    expect(outOfOrderChip(11)).toBeNull();
+    expect(outOfOrderSwitch(11).getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('takes a machine out of service from its switch', () => {
+    service.setOutOfOrder.and.returnValue(of({
+      id: 11, code: 'TM03', name: 'Treadmill 3', status: 'Out of Order', deleted: false, exercises: [],
+    }));
+    render();
+
+    outOfOrderSwitch(11).click();
+    fixture.detectChanges();
+
+    expect(service.setOutOfOrder).toHaveBeenCalledOnceWith(11, true);
+    expect(component.groups()[1].equipmentStatus).toBe('Out of Order');
+    expect(outOfOrderChip(11)).not.toBeNull();
+    expect(snackBar.open).toHaveBeenCalledWith('Treadmill 3 marked out of order', undefined, jasmine.any(Object));
+    expect(service.loadSummary).toHaveBeenCalledTimes(2);
+  });
+
+  it('puts the switch back and says so when saving fails', () => {
+    service.setOutOfOrder.and.returnValue(throwError(() => new Error('500')));
+    render();
+
+    outOfOrderSwitch(11).click();
+    fixture.detectChanges();
+
+    expect(outOfOrderSwitch(11).getAttribute('aria-checked')).toBe('false');
+    expect(component.groups()[1].equipmentStatus).toBe('Available');
+    expect(outOfOrderChip(11)).toBeNull();
+    expect(snackBar.open).toHaveBeenCalledWith('Failed to update the machine', 'Dismiss', jasmine.any(Object));
+  });
+
+  it('shows a machine back in service once its last open report is resolved', () => {
+    service.getGrouped.and.returnValue(of(groups({ treadmill: 'Out of Order' })));
+    service.updateStatus.and.callFake((id, status) =>
+      of(report({ id, equipmentId: 11, equipmentName: 'Treadmill 3', status, resolvedAt: NOW })));
+    render();
+
+    component.onReportStatusChange(component.groups()[1].reports[0], 'RESOLVED');
+    fixture.detectChanges();
+
+    expect(component.groups()[1].equipmentStatus).toBe('Available');
+    expect(outOfOrderChip(11)).toBeNull();
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Report marked Resolved · Treadmill 3 is back in service', undefined, jasmine.any(Object));
+  });
+
+  it('keeps a machine out of order while it still has open reports', () => {
+    service.getGrouped.and.returnValue(of(groups({ legPress: 'Out of Order' })));
+    service.updateStatus.and.callFake((id, status) => of(report({ id, status, resolvedAt: NOW })));
+    render();
+
+    component.onReportStatusChange(component.groups()[0].reports[0], 'RESOLVED');
+    fixture.detectChanges();
+
+    expect(component.groups()[0].equipmentStatus).toBe('Out of Order');
+    expect(snackBar.open).toHaveBeenCalledWith('Report marked Resolved', undefined, jasmine.any(Object));
+  });
+
+  it('uses the server status after resolving every open report at once', () => {
+    service.getGrouped.and.returnValue(of(groups({ legPress: 'Out of Order' })));
+    service.updateMachineStatus.and.callFake((equipmentId, status) => {
+      const legPress = groups()[0];
+      return of({
+        ...legPress,
+        equipmentStatus: 'Available',
+        openReportCount: 0,
+        worstSeverity: null,
+        reports: legPress.reports.map((r) => ({ ...r, status })),
+      });
+    });
+    render();
+
+    component.onMachineStatusChange(component.groups()[0], 'RESOLVED');
+    fixture.detectChanges();
+
+    expect(component.groups()[0].equipmentStatus).toBe('Available');
+    expect(outOfOrderChip(10)).toBeNull();
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Open reports on Leg Press marked Resolved · back in service', undefined, jasmine.any(Object));
   });
 
   it('refreshes every 30 seconds while auto-refresh is on', fakeAsync(() => {

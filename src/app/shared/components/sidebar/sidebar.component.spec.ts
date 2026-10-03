@@ -6,7 +6,9 @@ import { EquipmentIssueService } from '../../../core/services/equipment-issue.se
 import { EquipmentIssueSummary } from '../../../core/models/equipment-issue.model';
 import { ISSUE_BADGE_REFRESH_MS, SidebarComponent } from './sidebar.component';
 
-const SUMMARY: EquipmentIssueSummary = { reported: 3, acknowledged: 0, inProgress: 0, affectedMachines: 2 };
+const SUMMARY: EquipmentIssueSummary = {
+  reported: 3, acknowledged: 0, inProgress: 0, affectedMachines: 2, outOfOrderMachines: 0,
+};
 
 describe('SidebarComponent', () => {
   let fixture: ComponentFixture<SidebarComponent>;

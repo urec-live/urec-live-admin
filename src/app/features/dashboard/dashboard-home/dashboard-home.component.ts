@@ -229,8 +229,8 @@ Chart.register(gradientBarPlugin);
               <div class="activity-item">
                 <div class="activity-icon-wrap"
                   [class.activity-checkin]="entry.eventType === 'CHECK_IN'"
-                  [class.activity-issue]="isIssueEvent(entry.eventType)"
-                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN' && !isIssueEvent(entry.eventType)">
+                  [class.activity-issue]="isMaintenanceEvent(entry.eventType)"
+                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN' && !isMaintenanceEvent(entry.eventType)">
                   <mat-icon>{{ activityIcon(entry.eventType) }}</mat-icon>
                 </div>
                 <div class="activity-text">
@@ -651,13 +651,16 @@ export class DashboardHomeComponent implements OnInit {
     return h < 12 ? `${h}a` : `${h - 12}p`;
   }
 
-  isIssueEvent(eventType: string): boolean {
-    return eventType.startsWith('ISSUE_');
+  /** Issue reports and machines going out of / back into service */
+  isMaintenanceEvent(eventType: string): boolean {
+    return eventType.startsWith('ISSUE_') || eventType.startsWith('EQUIPMENT_');
   }
 
   activityIcon(eventType: string): string {
     if (eventType === 'CHECK_IN') return 'login';
-    return this.isIssueEvent(eventType) ? 'report_problem' : 'logout';
+    if (eventType.startsWith('ISSUE_')) return 'report_problem';
+    if (eventType.startsWith('EQUIPMENT_')) return 'build';
+    return 'logout';
   }
 
   relativeTime(timestamp: string): string {

@@ -23,4 +23,13 @@ describe('ActivityComponent', () => {
     expect(component.eventClass('ISSUE_REPORTED')).toBe('bg-orange-100 text-orange-700');
     expect(component.eventClass('ISSUE_STATUS_CHANGED')).toBe('bg-sky-100 text-sky-700');
   });
+
+  it('labels machines going out of and back into service', () => {
+    expect(component.eventTypes).toContain('EQUIPMENT_OUT_OF_ORDER');
+    expect(component.eventTypes).toContain('EQUIPMENT_BACK_IN_SERVICE');
+    expect(component.formatEventType('EQUIPMENT_OUT_OF_ORDER')).toBe('Out of Order');
+    expect(component.formatEventType('EQUIPMENT_BACK_IN_SERVICE')).toBe('Back in Service');
+    expect(component.eventClass('EQUIPMENT_OUT_OF_ORDER')).toBe('bg-gray-200 text-gray-700');
+    expect(component.eventClass('EQUIPMENT_BACK_IN_SERVICE')).toBe('bg-emerald-100 text-emerald-700');
+  });
 });

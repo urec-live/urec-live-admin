@@ -20,6 +20,7 @@ export interface EquipmentIssueGroup {
   equipmentId: number;
   equipmentName: string;
   equipmentCode: string | null;
+  equipmentStatus: string; // the machine's status, e.g. 'Out of Order'
   openReportCount: number;
   worstSeverity: IssueSeverity | null; // across open reports; null when all are resolved
   latestReportedAt: string;
@@ -31,6 +32,13 @@ export interface EquipmentIssueSummary {
   acknowledged: number;
   inProgress: number;
   affectedMachines: number;
+  outOfOrderMachines: number;
+}
+
+export const OUT_OF_ORDER = 'Out of Order';
+
+export function isOutOfOrder(status: string | null | undefined): boolean {
+  return status?.trim().toLowerCase() === OUT_OF_ORDER.toLowerCase();
 }
 
 /** Statuses in the order staff move a report along. */

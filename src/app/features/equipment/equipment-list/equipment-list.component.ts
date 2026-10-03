@@ -246,7 +246,7 @@ export class EquipmentListComponent implements OnInit, AfterViewInit {
   private destroyRef = inject(DestroyRef);
 
   columns = ['select', 'name', 'code', 'status', 'muscleGroups', 'actions'];
-  statuses: EquipmentStatus[] = ['Available', 'In Use', 'Reserved'];
+  statuses: EquipmentStatus[] = ['Available', 'In Use', 'Reserved', 'Out of Order'];
 
   loading = signal(false);
   dataSource = new MatTableDataSource<Equipment>([]);
@@ -314,6 +314,8 @@ export class EquipmentListComponent implements OnInit, AfterViewInit {
         return 'bg-blue-100 text-blue-700';
       case 'Reserved':
         return 'bg-amber-100 text-amber-700';
+      case 'Out of Order':
+        return 'bg-gray-200 text-gray-700';
     }
   }
 

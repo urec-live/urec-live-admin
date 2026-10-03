@@ -133,6 +133,8 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Stat cards, search/severity filters, "Show resolved", 30s auto-refresh
 - `EquipmentIssueService.summary` signal feeds both the page and the sidebar badge (reports awaiting review, polled every 60s)
 - Failed saves reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
+- Per-machine "Out of order" switch (`PUT /api/admin/equipment-issues/equipment/{id}/out-of-order`) blocks member check-ins; resolving a machine's last open report puts it back in service (server rule, mirrored locally for single-report changes)
+- `EquipmentStatus` includes `'Out of Order'` (Equipment page dropdown/filter, live monitor and floor-map editor colour it grey)
 
 ### Auth
 - Login page with admin role validation (rejects non-ADMIN accounts)
@@ -187,6 +189,7 @@ npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
 - Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ summary: signal(null) }`)
 - `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
 - Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
+- Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
 
 ## How to Run
 

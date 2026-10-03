@@ -22,7 +22,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EquipmentIssueService } from '../../core/services/equipment-issue.service';
@@ -34,6 +34,7 @@ import {
   ISSUE_STATUS_LABELS,
   IssueSeverity,
   IssueStatus,
+  isOutOfOrder,
 } from '../../core/models/equipment-issue.model';
 
 export const AUTO_REFRESH_MS = 30_000;
@@ -138,6 +139,9 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
             <div>
               <p class="text-2xl font-bold text-gray-800" data-testid="stat-machines">{{ summary()?.affectedMachines ?? '—' }}</p>
               <p class="text-xs text-gray-500">Machines affected</p>
+              @if (summary()?.outOfOrderMachines; as outOfOrderCount) {
+                <p class="text-xs font-medium text-gray-700" data-testid="stat-out-of-order">{{ outOfOrderCount }} out of order</p>
+              }
             </div>
           </div>
         </mat-card>
@@ -210,6 +214,10 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
                 </div>
               </mat-panel-title>
               <mat-panel-description class="justify-end gap-3">
+                @if (isOutOfOrder(group.equipmentStatus)) {
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-200 text-gray-700"
+                        data-testid="out-of-order-chip">Out of order</span>
+                }
                 @if (group.worstSeverity; as severity) {
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
                         [ngClass]="severityClass(severity)">{{ severityLabels[severity] }}</span>
@@ -228,22 +236,34 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
               </mat-panel-description>
             </mat-expansion-panel-header>
 
-            @if (group.openReportCount > 0) {
-              <div class="flex flex-wrap items-center gap-3 pb-3 border-b border-gray-100">
-                <span class="text-sm text-gray-600">Set all open reports to:</span>
-                <mat-button-toggle-group
-                  #machineToggle="matButtonToggleGroup"
-                  class="issue-toggle"
-                  [value]="machineStatus(group)"
-                  (change)="onMachineStatusChange(group, $event.value, machineToggle)"
-                  [disabled]="savingMachines().has(group.equipmentId)"
-                  aria-label="Status for all open reports on this machine">
-                  @for (status of statuses; track status) {
-                    <mat-button-toggle [value]="status">{{ statusLabels[status] }}</mat-button-toggle>
-                  }
-                </mat-button-toggle-group>
-              </div>
-            }
+            <div class="flex flex-wrap items-center gap-x-8 gap-y-3 pb-3 border-b border-gray-100">
+              <mat-slide-toggle
+                #outOfOrderToggle
+                color="warn"
+                [checked]="isOutOfOrder(group.equipmentStatus)"
+                [disabled]="savingAvailability().has(group.equipmentId)"
+                (change)="onOutOfOrderChange(group, $event.checked, outOfOrderToggle)"
+                matTooltip="Members can't check in while a machine is out of order"
+                [attr.data-testid]="'out-of-order-toggle-' + group.equipmentId">
+                Out of order
+              </mat-slide-toggle>
+              @if (group.openReportCount > 0) {
+                <div class="flex flex-wrap items-center gap-3">
+                  <span class="text-sm text-gray-600">Set all open reports to:</span>
+                  <mat-button-toggle-group
+                    #machineToggle="matButtonToggleGroup"
+                    class="issue-toggle"
+                    [value]="machineStatus(group)"
+                    (change)="onMachineStatusChange(group, $event.value, machineToggle)"
+                    [disabled]="savingMachines().has(group.equipmentId)"
+                    aria-label="Status for all open reports on this machine">
+                    @for (status of statuses; track status) {
+                      <mat-button-toggle [value]="status">{{ statusLabels[status] }}</mat-button-toggle>
+                    }
+                  </mat-button-toggle-group>
+                </div>
+              }
+            </div>
 
             @for (report of group.reports; track report.id) {
               <div class="py-4 border-b last:border-b-0 border-gray-100" [attr.data-testid]="'report-' + report.id">
@@ -291,6 +311,7 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
   readonly statusLabels = ISSUE_STATUS_LABELS;
   readonly severityLabels = ISSUE_SEVERITY_LABELS;
   readonly summary = this.issueService.summary;
+  readonly isOutOfOrder = isOutOfOrder;
 
   // State
   loading = signal(false);
@@ -298,6 +319,8 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
   /** Report / machine ids with a status change still saving */
   savingReports = signal<ReadonlySet<number>>(new Set());
   savingMachines = signal<ReadonlySet<number>>(new Set());
+  /** Machine ids whose out-of-order switch is still saving */
+  savingAvailability = signal<ReadonlySet<number>>(new Set());
 
   // Filters
   search = signal('');
@@ -358,8 +381,9 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
       interval(AUTO_REFRESH_MS)
         .pipe(takeUntil(this.stopRefresh$))
         .subscribe(() => {
-          // Don't let a refresh overwrite a status change that's still saving
-          if (this.savingReports().size === 0 && this.savingMachines().size === 0) {
+          // Don't let a refresh overwrite a change that's still saving
+          if (this.savingReports().size === 0 && this.savingMachines().size === 0
+              && this.savingAvailability().size === 0) {
             this.loadAll();
           }
         });
@@ -380,7 +404,14 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
         next: (updated) => {
           this.patchReport(report.equipmentId, report.id, updated);
           this.markSaving(this.savingReports, report.id, false);
-          this.snackBar.open(`Report marked ${ISSUE_STATUS_LABELS[status]}`, undefined, { duration: 2000 });
+          const backInService = status === 'RESOLVED' && this.showBackInServiceIfFixed(report.equipmentId);
+          this.snackBar.open(
+            backInService
+              ? `Report marked Resolved · ${report.equipmentName} is back in service`
+              : `Report marked ${ISSUE_STATUS_LABELS[status]}`,
+            undefined,
+            { duration: 2500 },
+          );
           this.refreshSummary();
         },
         error: () => {
@@ -411,9 +442,13 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
         next: (updated) => {
           const fresh = new Map(updated.reports.map((r) => [r.id, r] as const));
           this.updateReports(group.equipmentId, (r) => fresh.get(r.id) ?? r);
+          // The server puts the machine back in service when its last open report is resolved
+          this.patchGroup(group.equipmentId, { equipmentStatus: updated.equipmentStatus });
           this.markSaving(this.savingMachines, group.equipmentId, false);
+          const backInService = isOutOfOrder(group.equipmentStatus) && !isOutOfOrder(updated.equipmentStatus);
           this.snackBar.open(
-            `Open reports on ${group.equipmentName} marked ${ISSUE_STATUS_LABELS[status]}`,
+            `Open reports on ${group.equipmentName} marked ${ISSUE_STATUS_LABELS[status]}`
+              + (backInService ? ' · back in service' : ''),
             undefined,
             { duration: 2500 },
           );
@@ -425,6 +460,33 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
           if (toggle) toggle.value = this.machineStatus(group);
           this.markSaving(this.savingMachines, group.equipmentId, false);
           this.snackBar.open('Failed to update status', 'Dismiss', { duration: 3000 });
+        },
+      });
+  }
+
+  /** Takes a machine out of service (blocking check-ins) or puts it back. */
+  onOutOfOrderChange(group: EquipmentIssueGroup, outOfOrder: boolean, toggle?: MatSlideToggle): void {
+    const previousStatus = group.equipmentStatus;
+    this.markSaving(this.savingAvailability, group.equipmentId, true);
+
+    this.issueService.setOutOfOrder(group.equipmentId, outOfOrder)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (equipment) => {
+          this.patchGroup(group.equipmentId, { equipmentStatus: equipment.status });
+          this.markSaving(this.savingAvailability, group.equipmentId, false);
+          this.snackBar.open(
+            outOfOrder ? `${group.equipmentName} marked out of order` : `${group.equipmentName} is back in service`,
+            undefined,
+            { duration: 2500 },
+          );
+          this.refreshSummary();
+        },
+        error: () => {
+          // Reset the switch directly, for the same reason as the status toggles
+          if (toggle) toggle.checked = isOutOfOrder(previousStatus);
+          this.markSaving(this.savingAvailability, group.equipmentId, false);
+          this.snackBar.open('Failed to update the machine', 'Dismiss', { duration: 3000 });
         },
       });
   }
@@ -472,6 +534,23 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
       }
     }
     this.groups.set(groups);
+  }
+
+  private patchGroup(equipmentId: number, changes: Partial<EquipmentIssueGroup>): void {
+    this.groups.update((groups) => groups.map((group) =>
+      group.equipmentId === equipmentId ? { ...group, ...changes } : group,
+    ));
+  }
+
+  /**
+   * Mirrors the server rule after a single report is resolved: an out-of-order machine with no open
+   * reports left goes back in service. Returns whether that happened. Auto-refresh reconciles any drift.
+   */
+  private showBackInServiceIfFixed(equipmentId: number): boolean {
+    const group = this.groups().find((g) => g.equipmentId === equipmentId);
+    if (!group || group.openReportCount > 0 || !isOutOfOrder(group.equipmentStatus)) return false;
+    this.patchGroup(equipmentId, { equipmentStatus: 'Available' });
+    return true;
   }
 
   private patchReport(equipmentId: number, reportId: number, changes: Partial<EquipmentIssueReport>): void {

@@ -38,7 +38,9 @@ describe('EquipmentIssueService', () => {
   });
 
   it('publishes the summary to the shared signal', () => {
-    const summary: EquipmentIssueSummary = { reported: 2, acknowledged: 1, inProgress: 0, affectedMachines: 2 };
+    const summary: EquipmentIssueSummary = {
+      reported: 2, acknowledged: 1, inProgress: 0, affectedMachines: 2, outOfOrderMachines: 1,
+    };
     expect(service.summary()).toBeNull();
 
     let emitted: EquipmentIssueSummary | undefined;
@@ -63,6 +65,17 @@ describe('EquipmentIssueService', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ status: 'ACKNOWLEDGED' });
     req.flush({});
+  });
+
+  it('takes a machine out of service and puts it back', () => {
+    service.setOutOfOrder(3, true).subscribe();
+    const out = http.expectOne(`${base}/equipment/3/out-of-order`);
+    expect(out.request.method).toBe('PUT');
+    expect(out.request.body).toEqual({ outOfOrder: true });
+    out.flush({});
+
+    service.setOutOfOrder(3, false).subscribe();
+    expect(http.expectOne(`${base}/equipment/3/out-of-order`).request.body).toEqual({ outOfOrder: false });
   });
 
   it('sets the status of every open report on a machine', () => {

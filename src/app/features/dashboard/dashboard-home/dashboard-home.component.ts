@@ -229,8 +229,9 @@ Chart.register(gradientBarPlugin);
               <div class="activity-item">
                 <div class="activity-icon-wrap"
                   [class.activity-checkin]="entry.eventType === 'CHECK_IN'"
-                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN'">
-                  <mat-icon>{{ entry.eventType === 'CHECK_IN' ? 'login' : 'logout' }}</mat-icon>
+                  [class.activity-issue]="isIssueEvent(entry.eventType)"
+                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN' && !isIssueEvent(entry.eventType)">
+                  <mat-icon>{{ activityIcon(entry.eventType) }}</mat-icon>
                 </div>
                 <div class="activity-text">
                   <span class="activity-name">{{ entry.username }}</span>
@@ -452,6 +453,7 @@ Chart.register(gradientBarPlugin);
     .activity-icon-wrap mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .activity-checkin  { background: rgba(34,197,94,.12); color: #16a34a; }
     .activity-checkout { background: rgba(148,163,184,.15); color: #64748b; }
+    .activity-issue    { background: rgba(245,158,11,.14); color: #d97706; }
     .activity-text {
       flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;
     }
@@ -647,6 +649,15 @@ export class DashboardHomeComponent implements OnInit {
     if (h === 12) return '12p';
     if (h % 3 !== 0) return '';
     return h < 12 ? `${h}a` : `${h - 12}p`;
+  }
+
+  isIssueEvent(eventType: string): boolean {
+    return eventType.startsWith('ISSUE_');
+  }
+
+  activityIcon(eventType: string): string {
+    if (eventType === 'CHECK_IN') return 'login';
+    return this.isIssueEvent(eventType) ? 'report_problem' : 'logout';
   }
 
   relativeTime(timestamp: string): string {

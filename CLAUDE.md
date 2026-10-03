@@ -102,6 +102,7 @@ src/
 | `/login` | LoginComponent | Public |
 | `/dashboard` | DashboardHomeComponent | Default after login |
 | `/equipment` | EquipmentListComponent | Full CRUD |
+| `/equipment-issues` | EquipmentIssuesComponent | Member-reported machine problems; per-report status toggles |
 | `/exercises` | ExercisesComponent | CRUD + equipment linking |
 | `/users` | UsersComponent | List + role management |
 | `/activity` | ActivityComponent | Activity feed |
@@ -126,6 +127,12 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Create, edit, delete equipment (dialogs)
 - QR code generation and display per machine
 - Bulk QR printing from multi-select
+
+### Equipment Issues (`/equipment-issues`)
+- One expansion panel per machine with member reports (not-working first); per-report status toggle (New · Acknowledged · Repairing · Resolved) plus "Set all open reports to"
+- Stat cards, search/severity filters, "Show resolved", 30s auto-refresh
+- `EquipmentIssueService.summary` signal feeds both the page and the sidebar badge (reports awaiting review, polled every 60s)
+- Failed saves reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
 
 ### Auth
 - Login page with admin role validation (rejects non-ADMIN accounts)
@@ -170,6 +177,16 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Ensure mobile-responsive layout for tablet use by staff
 
 ---
+
+## Testing
+
+```bash
+npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
+```
+
+- Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ summary: signal(null) }`)
+- `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
+- Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
 
 ## How to Run
 

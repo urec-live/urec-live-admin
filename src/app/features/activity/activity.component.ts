@@ -28,7 +28,8 @@ import { ActivityService } from '../../core/services/activity.service';
 import { ActivityLogEntry, ActivitySummary } from '../../core/models/activity.model';
 
 const EVENT_TYPES = ['CHECK_IN', 'CHECK_OUT', 'SESSION_SAVED', 'REGISTRATION',
-                     'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER'];
+                     'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER',
+                     'ISSUE_REPORTED', 'ISSUE_STATUS_CHANGED'];
 
 const DATE_PRESETS = [
   { label: 'Today',      value: 'today' },
@@ -416,6 +417,8 @@ export class ActivityComponent implements OnInit, OnDestroy {
       ADMIN_CREATE_USER: 'User Created',
       ADMIN_UPDATE_ROLES:'Roles Updated',
       ADMIN_DELETE_USER: 'User Deleted',
+      ISSUE_REPORTED:    'Issue Reported',
+      ISSUE_STATUS_CHANGED: 'Issue Updated',
     };
     return map[et] ?? et;
   }
@@ -429,6 +432,8 @@ export class ActivityComponent implements OnInit, OnDestroy {
       case 'ADMIN_CREATE_USER': return 'bg-teal-100 text-teal-700';
       case 'ADMIN_UPDATE_ROLES':return 'bg-amber-100 text-amber-700';
       case 'ADMIN_DELETE_USER': return 'bg-red-100 text-red-700';
+      case 'ISSUE_REPORTED':    return 'bg-orange-100 text-orange-700';
+      case 'ISSUE_STATUS_CHANGED': return 'bg-sky-100 text-sky-700';
       default:                  return 'bg-gray-100 text-gray-600';
     }
   }

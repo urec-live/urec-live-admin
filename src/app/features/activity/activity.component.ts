@@ -28,7 +28,8 @@ import { ActivityService } from '../../core/services/activity.service';
 import { ActivityLogEntry, ActivitySummary } from '../../core/models/activity.model';
 
 const EVENT_TYPES = ['CHECK_IN', 'CHECK_OUT', 'SESSION_SAVED', 'REGISTRATION',
-                     'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER'];
+                     'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER',
+                     'HELP_REQUESTED', 'HELP_STATUS_CHANGED', 'HELP_CLOSED'];
 
 const DATE_PRESETS = [
   { label: 'Today',      value: 'today' },
@@ -416,6 +417,9 @@ export class ActivityComponent implements OnInit, OnDestroy {
       ADMIN_CREATE_USER: 'User Created',
       ADMIN_UPDATE_ROLES:'Roles Updated',
       ADMIN_DELETE_USER: 'User Deleted',
+      HELP_REQUESTED:    'Help Requested',
+      HELP_STATUS_CHANGED: 'Help Response',
+      HELP_CLOSED:       'Help Closed',
     };
     return map[et] ?? et;
   }
@@ -429,6 +433,9 @@ export class ActivityComponent implements OnInit, OnDestroy {
       case 'ADMIN_CREATE_USER': return 'bg-teal-100 text-teal-700';
       case 'ADMIN_UPDATE_ROLES':return 'bg-amber-100 text-amber-700';
       case 'ADMIN_DELETE_USER': return 'bg-red-100 text-red-700';
+      case 'HELP_REQUESTED':    return 'bg-yellow-100 text-yellow-800';
+      case 'HELP_STATUS_CHANGED': return 'bg-lime-100 text-lime-800';
+      case 'HELP_CLOSED':       return 'bg-cyan-100 text-cyan-700';
       default:                  return 'bg-gray-100 text-gray-600';
     }
   }

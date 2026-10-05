@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -31,6 +31,14 @@ interface NavItem {
              class="rounded-lg mx-2 mb-1 text-white hover:bg-indigo-800 transition-colors">
             <mat-icon matListItemIcon class="text-indigo-300">{{ item.icon }}</mat-icon>
             <span matListItemTitle>{{ item.label }}</span>
+            @if (item.route === helpRoute && helpBadge > 0) {
+              <span matListItemMeta
+                    class="!self-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-indigo-950 text-xs font-semibold flex items-center justify-center"
+                    data-testid="help-badge"
+                    [attr.aria-label]="helpBadge + (helpBadge === 1 ? ' member needs' : ' members need') + ' staff'">
+                {{ helpBadge }}
+              </span>
+            }
           </a>
         }
       </mat-nav-list>
@@ -43,8 +51,14 @@ interface NavItem {
   `
 })
 export class SidebarComponent {
+  /** Members waiting for staff (new + "Too busy"), from the shell's HelpRequestStore. */
+  @Input() helpBadge = 0;
+
+  readonly helpRoute = '/help-requests';
+
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    { label: 'Help Requests', icon: 'support_agent', route: this.helpRoute },
     // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
     { label: 'Floor Map', icon: 'layers', route: '/floor-map' },

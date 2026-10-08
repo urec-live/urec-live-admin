@@ -1,3 +1,7 @@
+## Shared team workflow
+
+Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+
 # CLAUDE.md — UREC Live Admin Dashboard
 
 ## Project Overview
@@ -152,25 +156,6 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 
 ---
 
-## What Still Needs Work
-
-### Polish & Verification
-- **ExercisesComponent** — Exercise CRUD exists in service layer; verify UI is fully connected
-- **UsersComponent** — Service exists (`user.service.ts`); verify list + role change UI works end-to-end
-- **ActivityComponent** — Analytics service has `getActivityLog()`; verify paginated table display
-- **LiveMonitorComponent** — WebSocket service ready; verify live grid uses it properly
-
-### Environment Configuration
-- Both `environment.ts` and `environment.prod.ts` have hardcoded device IP `172.20.1.229`
-- Before production deploy: set `environment.prod.ts` to the real backend domain
-
-### Design Polish
-- Sidebar collapse animation
-- Subtle status-change animations in live monitor
-- Ensure mobile-responsive layout for tablet use by staff
-
----
-
 ## How to Run
 
 ```bash
@@ -194,12 +179,3 @@ Spring Boot backend must be running for API calls and WebSocket.
 - Live monitor should feel "alive" — subtle animations on status changes
 - Charts: simple and glanceable (gym manager has 30 seconds)
 - Mobile-responsive for tablet use by staff
-
----
-
-## Roadmap
-
-- **Phase 1 (NOW)**: Core dashboard mostly complete — polish remaining screens
-- **Phase 2**: Advanced analytics, push notification management, exercise GIF uploads
-- **Phase 3**: Multi-tenant support (each gym gets their own branded dashboard), billing
-- **Phase 4**: White-label theming, API keys for gym integrations

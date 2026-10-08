@@ -59,6 +59,9 @@ src/
 │   │   │   ├── exercise.service.ts      # CRUD + link/unlink on /api/admin/exercises
 │   │   │   ├── analytics.service.ts     # Live snapshot, usage, peak hours, user stats
 │   │   │   ├── user.service.ts          # /api/admin/users endpoints
+│   │   │   ├── help-request.service.ts  # /api/admin/help-requests endpoints
+│   │   │   ├── help-request-store.service.ts # Polled help request queue + alerts (toast, chime, tab title)
+│   │   │   ├── chime.service.ts         # Web Audio "cabin call" chime, mute setting
 │   │   │   └── websocket.service.ts     # RxStomp client, /topic/machines observable
 │   │   ├── guards/
 │   │   │   └── auth.guard.ts
@@ -69,12 +72,14 @@ src/
 │   │       ├── equipment.model.ts       # Equipment, CreateEquipmentRequest, EquipmentStatus
 │   │       ├── exercise.model.ts
 │   │       ├── analytics.model.ts       # LiveSnapshot, UsageStats, PeakHours, ActivityLogEntry
+│   │       ├── help-request.model.ts    # HelpRequest, statuses, labels, needsStaff(), outcomeLabel()
 │   │       └── user.model.ts
 │   ├── features/
 │   │   ├── auth/login/                  # Login page (public route)
 │   │   ├── dashboard/
 │   │   │   ├── dashboard-home/          # Summary cards + charts + activity feed
 │   │   │   └── live-monitor/            # Real-time machine status grid
+│   │   ├── help-requests/               # Staff queue for members' "Call staff" requests
 │   │   ├── equipment/
 │   │   │   ├── equipment-list/          # Paginated table + CRUD dialogs + QR print
 │   │   │   └── equipment-form/          # Create/edit dialog component
@@ -105,6 +110,7 @@ src/
 |------|-----------|-------|
 | `/login` | LoginComponent | Public |
 | `/dashboard` | DashboardHomeComponent | Default after login |
+| `/help-requests` | HelpRequestsComponent | Members calling staff to a machine; On the way / Too busy / Done helping |
 | `/equipment` | EquipmentListComponent | Full CRUD |
 | `/exercises` | ExercisesComponent | CRUD + equipment linking |
 | `/users` | UsersComponent | List + role management |
@@ -130,6 +136,14 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Create, edit, delete equipment (dialogs)
 - QR code generation and display per machine
 - Bulk QR printing from multi-select
+
+### Help Requests (`/help-requests`)
+- Stat cards (New, On the way, Too busy); open queue oldest first with "Waiting N min" (15 s clock) and who is on the way; **On the way / Too busy / Done helping** (disabled per request while saving; a 409/404 says "already closed or changed" and refreshes)
+- **Recently closed** (`GET /history`) with outcome and time to first response; **Sound** switch
+- `HelpRequestStore` polls `GET /api/admin/help-requests` every 5 s for the whole signed-in session (the shell calls `start()`/`stop()`). **Polling, not WebSocket:** `sockjs-client` crashes in the browser (see Testing). The first load is a silent baseline; later arrivals get a toast with **View**, the chime and "(N)" in the tab title
+- The shell passes `needsStaffCount()` (new + Too busy) to the sidebar's `helpBadge` input, an amber badge on Help Requests
+- `ChimeService` synthesises the chime with Web Audio (no sound file); `armUnlock()` resumes audio on the first click/keypress, since browsers block it until then; mute persists in `localStorage`
+- Activity page labels `HELP_REQUESTED`, `HELP_STATUS_CHANGED`, `HELP_CLOSED`
 
 ### Auth
 - Login page with admin role validation (rejects non-ADMIN accounts)
@@ -169,6 +183,20 @@ ng build --configuration production
 ```
 
 Spring Boot backend must be running for API calls and WebSocket.
+
+## Testing
+
+```bash
+npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
+```
+
+- Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ requests: signal([]) }`)
+- `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
+- Polling and clocks: `fakeAsync` + `tick`, then `discardPeriodicTasks()` or `fixture.destroy()`
+- `ChimeService` takes its `AudioContext` from the `AUDIO_CONTEXT_FACTORY` token, so specs pass a fake
+- Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
+- Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser
+- Help request testing guide: `HELP_REQUESTS_TESTING.md`
 
 ---
 

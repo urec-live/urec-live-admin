@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
+import { HelpRequestStore } from '../../../core/services/help-request-store.service';
 
 @Component({
   selector: 'app-shell',
@@ -11,7 +12,7 @@ import { TopbarComponent } from '../topbar/topbar.component';
   template: `
     <mat-sidenav-container class="h-screen">
       <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="w-64" fixedInViewport>
-        <app-sidebar />
+        <app-sidebar [helpBadge]="helpRequests.needsStaffCount()" />
       </mat-sidenav>
 
       <mat-sidenav-content class="flex flex-col h-full bg-gray-50">
@@ -23,6 +24,17 @@ import { TopbarComponent } from '../topbar/topbar.component';
     </mat-sidenav-container>
   `
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit, OnDestroy {
+  /** Watches for members calling staff on every page of the signed-in dashboard. */
+  readonly helpRequests = inject(HelpRequestStore);
+
   sidenavOpen = true;
+
+  ngOnInit(): void {
+    this.helpRequests.start();
+  }
+
+  ngOnDestroy(): void {
+    this.helpRequests.stop();
+  }
 }

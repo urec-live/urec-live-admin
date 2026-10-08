@@ -20,6 +20,11 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard-home/dashboard-home.component').then(m => m.DashboardHomeComponent)
       },
       {
+        path: 'help-requests',
+        loadComponent: () =>
+          import('./features/help-requests/help-requests.component').then(m => m.HelpRequestsComponent)
+      },
+      {
         path: 'equipment',
         loadComponent: () =>
           import('./features/equipment/equipment-list/equipment-list.component').then(m => m.EquipmentListComponent)

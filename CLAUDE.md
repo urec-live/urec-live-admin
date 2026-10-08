@@ -131,8 +131,10 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 ### Equipment Issues (`/equipment-issues`)
 - One expansion panel per machine with member reports (not-working first); per-report status toggle (New · Acknowledged · Repairing · Resolved) plus "Set all open reports to"
 - Stat cards, search/severity filters, "Show resolved", 30s auto-refresh
-- `EquipmentIssueService.summary` signal feeds both the page and the sidebar badge (reports awaiting review, polled every 60s)
-- Failed saves reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
+- `EquipmentIssueStore` (root, started/stopped by the shell for the signed-in session) polls every 10 s — open reports plus `loadSummary()`. Polling, not WebSocket (sockjs-client crashes in the browser). The first load (including resolved reports, to learn the highest id) is a silent baseline; later reports get a toast with **View** and are emitted on `arrivals$`, which the Issues page and the Dashboard's Recent Activity reload on. No chime and no tab title — those belong to help requests
+- `EquipmentIssueService.summary` signal (kept current by the store) feeds the page, the sidebar badge (reports awaiting review) and the Dashboard's "N out of order" line under Total Machines
+- "Set all open reports to …" always asks first, and so does resolving a single report (`ConfirmDialogComponent`, "Are you sure?"); other single-report changes save straight away
+- Failed saves and cancelled confirmations reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
 - Per-machine "Out of order" switch (`PUT /api/admin/equipment-issues/equipment/{id}/out-of-order`) blocks member check-ins; resolving a machine's last open report puts it back in service (server rule, mirrored locally for single-report changes)
 - `EquipmentStatus` includes `'Out of Order'` (Equipment page dropdown/filter, live monitor and floor-map editor colour it grey)
 

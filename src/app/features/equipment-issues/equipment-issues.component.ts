@@ -24,8 +24,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { EquipmentIssueService } from '../../core/services/equipment-issue.service';
+import { EquipmentIssueStore } from '../../core/services/equipment-issue-store.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import {
   EquipmentIssueGroup,
   EquipmentIssueReport,
@@ -303,6 +309,8 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
 })
 export class EquipmentIssuesComponent implements OnInit, OnDestroy {
   private issueService = inject(EquipmentIssueService);
+  private store = inject(EquipmentIssueStore);
+  private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private destroyRef = inject(DestroyRef);
   private stopRefresh$ = new Subject<void>();
@@ -347,6 +355,12 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadAll();
     this.toggleAutoRefresh();
+    // A newly filed report shows up right away instead of on the next auto-refresh
+    this.store.arrivals$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.isSaving()) this.loadGroups();
+      });
   }
 
   ngOnDestroy(): void {
@@ -382,15 +396,53 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.stopRefresh$))
         .subscribe(() => {
           // Don't let a refresh overwrite a change that's still saving
-          if (this.savingReports().size === 0 && this.savingMachines().size === 0
-              && this.savingAvailability().size === 0) {
-            this.loadAll();
-          }
+          if (!this.isSaving()) this.loadAll();
         });
     }
   }
 
+  /** Resolving asks first; other status changes save straight away. */
   onReportStatusChange(report: EquipmentIssueReport, status: IssueStatus, toggle?: MatButtonToggleGroup): void {
+    if (status === report.status) return;
+    if (status !== 'RESOLVED') {
+      this.applyReportStatus(report, status, toggle);
+      return;
+    }
+
+    const group = this.groups().find((g) => g.equipmentId === report.equipmentId);
+    const lastOpenOnOutOfOrder = !!group && isOutOfOrder(group.equipmentStatus) && group.openReportCount === 1;
+    this.confirm(
+      `This resolves ${report.reporterUsername}'s report on ${report.equipmentName}. They'll see it as Fixed.`
+        + (lastOpenOnOutOfOrder ? ` ${report.equipmentName} goes back in service.` : ''),
+      'Yes, resolve',
+      () => this.applyReportStatus(report, status, toggle),
+      // Nothing was sent, so just put the toggle back
+      () => { if (toggle) toggle.value = report.status; },
+    );
+  }
+
+  /** "Set all open reports to …" always asks first. */
+  onMachineStatusChange(group: EquipmentIssueGroup, status: IssueStatus, toggle?: MatButtonToggleGroup): void {
+    const openCount = group.reports.filter((r) => r.status !== 'RESOLVED').length;
+    if (openCount === 0) return;
+
+    const which = openCount === 1 ? 'the open report' : `all ${openCount} open reports`;
+    const resolving = status === 'RESOLVED';
+    this.confirm(
+      resolving
+        ? `This resolves ${which} on ${group.equipmentName}. Members will see ${openCount === 1 ? 'it' : 'them'} as Fixed.`
+          + (isOutOfOrder(group.equipmentStatus) ? ` ${group.equipmentName} goes back in service.` : '')
+        : `This sets ${which} on ${group.equipmentName} to ${ISSUE_STATUS_LABELS[status]}.`,
+      resolving
+        ? (openCount === 1 ? 'Yes, resolve' : 'Yes, resolve all')
+        : `Yes, set all to ${ISSUE_STATUS_LABELS[status]}`,
+      () => this.applyMachineStatus(group, status, toggle),
+      // `group` is unchanged, so this is the status the toggle showed before the click
+      () => { if (toggle) toggle.value = this.machineStatus(group); },
+    );
+  }
+
+  private applyReportStatus(report: EquipmentIssueReport, status: IssueStatus, toggle?: MatButtonToggleGroup): void {
     const previous = report.status;
     if (status === previous) return;
 
@@ -425,7 +477,7 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
       });
   }
 
-  onMachineStatusChange(group: EquipmentIssueGroup, status: IssueStatus, toggle?: MatButtonToggleGroup): void {
+  private applyMachineStatus(group: EquipmentIssueGroup, status: IssueStatus, toggle?: MatButtonToggleGroup): void {
     const previous = new Map(
       group.reports
         .filter((r) => r.status !== 'RESOLVED')
@@ -534,6 +586,21 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
       }
     }
     this.groups.set(groups);
+  }
+
+  private confirm(message: string, confirmLabel: string, onConfirm: () => void, onCancel: () => void): void {
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: { title: 'Are you sure?', message, confirmLabel } as ConfirmDialogData,
+      })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      // Closing the dialog any other way (Escape, backdrop) counts as Cancel
+      .subscribe((confirmed) => (confirmed ? onConfirm() : onCancel()));
+  }
+
+  private isSaving(): boolean {
+    return this.savingReports().size > 0 || this.savingMachines().size > 0 || this.savingAvailability().size > 0;
   }
 
   private patchGroup(equipmentId: number, changes: Partial<EquipmentIssueGroup>): void {

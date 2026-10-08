@@ -2,8 +2,14 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { WritableSignal, signal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Subject, of, throwError } from 'rxjs';
 import { EquipmentIssueService } from '../../core/services/equipment-issue.service';
+import { EquipmentIssueStore } from '../../core/services/equipment-issue-store.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import {
   EquipmentIssueGroup,
   EquipmentIssueReport,
@@ -76,8 +82,18 @@ describe('EquipmentIssuesComponent', () => {
   let service: jasmine.SpyObj<EquipmentIssueService>;
   let summary: WritableSignal<EquipmentIssueSummary | null>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  /** What the next confirmation dialog answers: true = the admin confirms, false = Cancel. */
+  let confirmNext: boolean;
+  let arrivals: Subject<EquipmentIssueReport[]>;
 
   beforeEach(async () => {
+    confirmNext = true;
+    dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+    dialog.open.and.callFake(
+      () => ({ afterClosed: () => of(confirmNext) }) as unknown as MatDialogRef<ConfirmDialogComponent>,
+    );
+    arrivals = new Subject<EquipmentIssueReport[]>();
     summary = signal<EquipmentIssueSummary | null>(null);
     service = jasmine.createSpyObj<EquipmentIssueService>(
       'EquipmentIssueService',
@@ -93,10 +109,15 @@ describe('EquipmentIssuesComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [EquipmentIssuesComponent],
-      providers: [provideNoopAnimations(), { provide: EquipmentIssueService, useValue: service }],
+      providers: [
+        provideNoopAnimations(),
+        { provide: EquipmentIssueService, useValue: service },
+        { provide: EquipmentIssueStore, useValue: { arrivals$: arrivals.asObservable() } },
+      ],
     })
       // MatSnackBarModule provides its own MatSnackBar, so override it everywhere
       .overrideProvider(MatSnackBar, { useValue: snackBar })
+      .overrideProvider(MatDialog, { useValue: dialog })
       .compileComponents();
   });
 
@@ -285,6 +306,125 @@ describe('EquipmentIssuesComponent', () => {
 
     expect(component.machineStatus(component.groups()[0])).toBeNull(); // REPORTED + ACKNOWLEDGED
     expect(component.machineStatus(component.groups()[1])).toBe('IN_PROGRESS');
+  });
+
+  // ── Confirmations ─────────────────────────────────────────────────────────
+
+  const machineToggle = (equipmentId: number): string =>
+    `[data-testid="machine-${equipmentId}"] [aria-label="Status for all open reports on this machine"]`;
+  const machineToggleButtons = (equipmentId: number): HTMLButtonElement[] =>
+    Array.from(el().querySelectorAll<HTMLButtonElement>(`${machineToggle(equipmentId)} .mat-button-toggle-button`));
+  const lastDialog = (): ConfirmDialogData =>
+    dialog.open.calls.mostRecent().args[1]?.data as ConfirmDialogData;
+
+  it('asks before setting all open reports on a machine, and Cancel changes nothing', () => {
+    confirmNext = false;
+    render();
+
+    machineToggleButtons(10)[2].click(); // Repairing
+    fixture.detectChanges();
+
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(lastDialog()).toEqual({
+      title: 'Are you sure?',
+      message: 'This sets all 2 open reports on Leg Press to Repairing.',
+      confirmLabel: 'Yes, set all to Repairing',
+    });
+    expect(service.updateMachineStatus).not.toHaveBeenCalled();
+    expect(component.groups()[0].reports.map((r) => r.status)).toEqual(['REPORTED', 'ACKNOWLEDGED']);
+    // The reports still disagree, so the machine-wide toggle goes back to showing nothing
+    expect(el().querySelector(`${machineToggle(10)} .mat-button-toggle-checked`)).toBeNull();
+  });
+
+  it('sets all open reports once the admin confirms', () => {
+    service.updateMachineStatus.and.callFake((equipmentId, status) => {
+      const legPress = groups()[0];
+      return of({ ...legPress, reports: legPress.reports.map((r) => ({ ...r, status })) });
+    });
+    render();
+
+    machineToggleButtons(10)[1].click(); // Acknowledged
+    fixture.detectChanges();
+
+    expect(service.updateMachineStatus).toHaveBeenCalledOnceWith(10, 'ACKNOWLEDGED');
+    expect(component.groups()[0].reports.map((r) => r.status)).toEqual(['ACKNOWLEDGED', 'ACKNOWLEDGED']);
+  });
+
+  it('asks before resolving everything on a machine, and says it goes back in service', () => {
+    confirmNext = false;
+    service.getGrouped.and.returnValue(of(groups({ legPress: 'Out of Order' })));
+    render();
+
+    component.onMachineStatusChange(component.groups()[0], 'RESOLVED');
+
+    expect(lastDialog()).toEqual({
+      title: 'Are you sure?',
+      message: 'This resolves all 2 open reports on Leg Press. Members will see them as Fixed.'
+        + ' Leg Press goes back in service.',
+      confirmLabel: 'Yes, resolve all',
+    });
+    expect(service.updateMachineStatus).not.toHaveBeenCalled();
+  });
+
+  it('asks before resolving a single report, and Cancel puts the toggle back', () => {
+    confirmNext = false;
+    render();
+
+    toggleButtons('report-1')[3].click(); // Resolved
+    fixture.detectChanges();
+
+    expect(lastDialog()).toEqual({
+      title: 'Are you sure?',
+      message: "This resolves jdoe's report on Leg Press. They'll see it as Fixed.",
+      confirmLabel: 'Yes, resolve',
+    });
+    expect(service.updateStatus).not.toHaveBeenCalled();
+    expect(text('[data-testid="report-1"] .mat-button-toggle-checked')).toBe('New');
+  });
+
+  it('resolves a single report once the admin confirms', () => {
+    service.updateStatus.and.callFake((id, status) =>
+      of(report({ id, severity: 'OUT_OF_ORDER', status, resolvedAt: NOW })));
+    render();
+
+    toggleButtons('report-1')[3].click(); // Resolved
+    fixture.detectChanges();
+
+    expect(service.updateStatus).toHaveBeenCalledOnceWith(1, 'RESOLVED');
+    expect(component.groups()[0].reports[0].status).toBe('RESOLVED');
+  });
+
+  it('warns when resolving the last open report puts an out-of-order machine back in service', () => {
+    confirmNext = false;
+    service.getGrouped.and.returnValue(of(groups({ treadmill: 'Out of Order' })));
+    render();
+
+    component.onReportStatusChange(component.groups()[1].reports[0], 'RESOLVED');
+
+    expect(lastDialog().message).toBe(
+      "This resolves jdoe's report on Treadmill 3. They'll see it as Fixed. Treadmill 3 goes back in service.");
+  });
+
+  it("doesn't ask for other single-report changes", () => {
+    service.updateStatus.and.callFake((id, status) => of(report({ id, status })));
+    render();
+
+    toggleButtons('report-1')[1].click(); // Acknowledged
+    fixture.detectChanges();
+
+    expect(dialog.open).not.toHaveBeenCalled();
+    expect(service.updateStatus).toHaveBeenCalledOnceWith(1, 'ACKNOWLEDGED');
+  });
+
+  // ── Live updates ──────────────────────────────────────────────────────────
+
+  it('shows a newly filed report right away instead of waiting for auto-refresh', () => {
+    render();
+    expect(service.getGrouped).toHaveBeenCalledTimes(1);
+
+    arrivals.next([report({ id: 9 })]);
+
+    expect(service.getGrouped).toHaveBeenCalledTimes(2);
   });
 
   // ── Out of order ──────────────────────────────────────────────────────────

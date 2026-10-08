@@ -1,10 +1,7 @@
-import { Component, DestroyRef, OnInit, computed, inject } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { EMPTY, interval } from 'rxjs';
-import { catchError, startWith, switchMap } from 'rxjs/operators';
 import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
 
 interface NavItem {
@@ -12,8 +9,6 @@ interface NavItem {
   icon: string;
   route: string;
 }
-
-export const ISSUE_BADGE_REFRESH_MS = 60_000;
 
 @Component({
   selector: 'app-sidebar',
@@ -56,9 +51,8 @@ export const ISSUE_BADGE_REFRESH_MS = 60_000;
     </div>
   `
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent {
   private issueService = inject(EquipmentIssueService);
-  private destroyRef = inject(DestroyRef);
 
   readonly issuesRoute = '/equipment-issues';
 
@@ -73,17 +67,9 @@ export class SidebarComponent implements OnInit {
     { label: 'Activity', icon: 'history', route: '/activity' }
   ];
 
-  /** New reports nobody has reviewed yet, badged so admins notice them from any page. */
+  /**
+   * New reports nobody has reviewed yet, badged so admins notice them from any page. EquipmentIssueStore
+   * (started by the shell) keeps the summary current.
+   */
   awaitingReview = computed(() => this.issueService.summary()?.reported ?? 0);
-
-  ngOnInit(): void {
-    interval(ISSUE_BADGE_REFRESH_MS)
-      .pipe(
-        startWith(0),
-        // A failed poll shouldn't stop the next one
-        switchMap(() => this.issueService.loadSummary().pipe(catchError(() => EMPTY))),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe();
-  }
 }

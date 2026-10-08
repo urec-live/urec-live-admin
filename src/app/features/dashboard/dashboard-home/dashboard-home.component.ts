@@ -19,6 +19,8 @@ import {
   Legend,
 } from 'chart.js';
 import { AnalyticsService } from '../../../core/services/analytics.service';
+import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
+import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
 import { LiveSnapshot, UsageStats, PeakHours, ActivityLogEntry } from '../../../core/models/analytics.model';
 
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -114,6 +116,16 @@ Chart.register(gradientBarPlugin);
           <div class="stat-info">
             <p class="stat-value">{{ snapshot?.totalMachines ?? '—' }}</p>
             <p class="stat-label">Total Machines</p>
+            @if (issueSummary(); as issues) {
+              <p class="mt-1 flex items-center gap-1 text-xs"
+                 [class.text-gray-400]="issues.outOfOrderMachines === 0"
+                 [class.font-medium]="issues.outOfOrderMachines > 0"
+                 [class.text-gray-600]="issues.outOfOrderMachines > 0"
+                 data-testid="out-of-order-count">
+                <mat-icon class="!text-sm !w-3.5 !h-3.5 !leading-none">build</mat-icon>
+                {{ issues.outOfOrderMachines }} out of order
+              </p>
+            }
           </div>
           <div class="stat-glow stat-glow-indigo"></div>
         </div>
@@ -467,6 +479,9 @@ Chart.register(gradientBarPlugin);
 })
 export class DashboardHomeComponent implements OnInit {
   private analyticsService = inject(AnalyticsService);
+  private issueStore = inject(EquipmentIssueStore);
+  /** Kept current by EquipmentIssueStore; feeds the "N out of order" line. */
+  readonly issueSummary = inject(EquipmentIssueService).summary;
 
   snapshot: LiveSnapshot | null = null;
   period: 'week' | 'month' = 'week';
@@ -565,11 +580,19 @@ export class DashboardHomeComponent implements OnInit {
       .pipe(startWith(0), takeUntilDestroyed(this.destroyRef), switchMap(() => this.analyticsService.getLiveSnapshot()))
       .subscribe((snap) => (this.snapshot = snap));
 
+    this.loadActivity();
+    // A newly filed equipment issue appears in Recent Activity without a page refresh
+    this.issueStore.arrivals$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadActivity());
+
+    this.loadCharts();
+  }
+
+  private loadActivity(): void {
     this.analyticsService.getActivityLog(0, 10)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((log) => (this.activityLog = log));
-
-    this.loadCharts();
   }
 
   onPeriodChange(period: 'week' | 'month'): void {

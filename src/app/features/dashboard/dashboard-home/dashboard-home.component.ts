@@ -115,7 +115,7 @@ Chart.register(gradientBarPlugin);
           <div class="stat-icon-wrap"><mat-icon>fitness_center</mat-icon></div>
           <div class="stat-info">
             <p class="stat-value">{{ snapshot?.totalMachines ?? '—' }}</p>
-            <p class="stat-label">Total Machines</p>
+            <p class="stat-label">Total {{ snapshot?.totalMachines === 1 ? 'Machine' : 'Machines' }}</p>
             @if (issueSummary(); as issues) {
               <p class="mt-1 flex items-center gap-1 text-xs"
                  [class.text-gray-400]="issues.outOfOrderMachines === 0"

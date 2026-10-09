@@ -11,7 +11,9 @@ import { EquipmentIssueStore } from '../../../core/services/equipment-issue-stor
   imports: [RouterOutlet, MatSidenavModule, SidebarComponent, TopbarComponent],
   template: `
     <mat-sidenav-container class="h-screen">
-      <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="w-64" fixedInViewport>
+      <!-- The ! matters: Material's own width rule (auto in this theme) loads after Tailwind, and an auto-width
+           sidebar grows when a badge appears and covers the page. 18rem fits "Equipment Issues" and its badge. -->
+      <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="!w-72" fixedInViewport>
         <app-sidebar />
       </mat-sidenav>
 

@@ -443,6 +443,20 @@ describe('EquipmentIssuesComponent', () => {
     expect(el().querySelector('[data-testid="stat-out-of-order"]')).toBeNull();
   });
 
+  it('says "Machine affected" for exactly one machine and "Machines affected" otherwise', () => {
+    render();
+    const label = (): string => text('[data-testid="stat-machines"] + p');
+    expect(label()).toBe('Machines affected'); // SUMMARY has 2
+
+    summary.set({ ...SUMMARY, affectedMachines: 1 });
+    fixture.detectChanges();
+    expect(label()).toBe('Machine affected');
+
+    summary.set({ ...SUMMARY, affectedMachines: 0 });
+    fixture.detectChanges();
+    expect(label()).toBe('Machines affected');
+  });
+
   it('marks out-of-order machines in their header and switch', () => {
     service.getGrouped.and.returnValue(of(groups({ legPress: 'Out of Order' })));
     render();

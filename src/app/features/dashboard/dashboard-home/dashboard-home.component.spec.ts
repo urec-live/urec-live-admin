@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WritableSignal, signal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { Subject, of } from 'rxjs';
+import { NEVER, Subject, of } from 'rxjs';
 import { AnalyticsService } from '../../../core/services/analytics.service';
 import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
 import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
@@ -66,6 +66,33 @@ describe('DashboardHomeComponent', () => {
       expect(component.activityIcon('CHECK_IN')).toBe('login');
       expect(component.activityIcon('CHECK_OUT')).toBe('logout');
       expect(component.activityIcon('SESSION_SAVED')).toBe('logout');
+    });
+  });
+
+  describe('machine count', () => {
+    beforeEach(async () => {
+      await TestBed.compileComponents();
+    });
+
+    /** Renders with this many machines in the live snapshot (null: still loading) and returns the card's label. */
+    function totalMachinesLabel(totalMachines: number | null): string {
+      analytics.getLiveSnapshot.and.returnValue(totalMachines === null ? NEVER : of({
+        totalMachines, occupiedMachines: 0, availableMachines: totalMachines, reservedMachines: 0, activeUsers: 0,
+      }));
+      const fixture = TestBed.createComponent(DashboardHomeComponent);
+      fixture.detectChanges();
+      const label = (fixture.nativeElement as HTMLElement).querySelector('.stat-indigo .stat-label');
+      return label?.textContent?.trim() ?? '';
+    }
+
+    it('says "Total Machine" when the gym has exactly one machine', () => {
+      expect(totalMachinesLabel(1)).toBe('Total Machine');
+    });
+
+    it('says "Total Machines" for any other count, and while loading', () => {
+      expect(totalMachinesLabel(0)).toBe('Total Machines');
+      expect(totalMachinesLabel(12)).toBe('Total Machines');
+      expect(totalMachinesLabel(null)).toBe('Total Machines');
     });
   });
 

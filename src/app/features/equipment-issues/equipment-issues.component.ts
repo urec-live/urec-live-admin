@@ -144,7 +144,7 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
             </div>
             <div>
               <p class="text-2xl font-bold text-gray-800" data-testid="stat-machines">{{ summary()?.affectedMachines ?? '—' }}</p>
-              <p class="text-xs text-gray-500">Machines affected</p>
+              <p class="text-xs text-gray-500">{{ summary()?.affectedMachines === 1 ? 'Machine' : 'Machines' }} affected</p>
               @if (summary()?.outOfOrderMachines; as outOfOrderCount) {
                 <p class="text-xs font-medium text-gray-700" data-testid="stat-out-of-order">{{ outOfOrderCount }} out of order</p>
               }

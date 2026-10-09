@@ -33,8 +33,9 @@ interface NavItem {
             <mat-icon matListItemIcon class="text-indigo-300">{{ item.icon }}</mat-icon>
             <span matListItemTitle>{{ item.label }}</span>
             @if (item.route === issuesRoute && awaitingReview() > 0) {
+              <!-- !ml-2 replaces MDC's 28px gap before trailing content, which would squeeze the label -->
               <span matListItemMeta
-                    class="!self-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center"
+                    class="!self-center !ml-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center"
                     data-testid="issues-badge"
                     [attr.aria-label]="awaitingReview() + ' equipment reports awaiting review'">
                 {{ awaitingReview() }}

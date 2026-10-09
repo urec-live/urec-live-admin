@@ -133,6 +133,7 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Stat cards, search/severity filters, "Show resolved", 30s auto-refresh
 - `EquipmentIssueStore` (root, started/stopped by the shell for the signed-in session) polls every 10 s — open reports plus `loadSummary()`. Polling, not WebSocket (sockjs-client crashes in the browser). The first load (including resolved reports, to learn the highest id) is a silent baseline; later reports get a toast with **View** and are emitted on `arrivals$`, which the Issues page and the Dashboard's Recent Activity reload on. No chime and no tab title — those belong to help requests
 - `EquipmentIssueService.summary` signal (kept current by the store) feeds the page, the sidebar badge (reports awaiting review) and the Dashboard's "N out of order" line under Total Machines
+- The sidebar has a fixed width (`!w-72` = 18rem in the shell) so the badge can't widen it over the page; 18rem plus the badge's `!ml-2` (in place of MDC's 28px trailing gap) keeps "Equipment Issues" uncut next to a 3-digit count. `shell-sidebar-layout.spec.ts` measures this in Chrome
 - "Set all open reports to …" always asks first, and so does resolving a single report (`ConfirmDialogComponent`, "Are you sure?"); other single-report changes save straight away
 - Failed saves and cancelled confirmations reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
 - Per-machine "Out of order" switch (`PUT /api/admin/equipment-issues/equipment/{id}/out-of-order`) blocks member check-ins; resolving a machine's last open report puts it back in service (server rule, mirrored locally for single-report changes)
@@ -160,6 +161,7 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - **Lazy loading**: feature routes use `loadComponent` / `loadChildren`
 - **No `any` types** — all API responses typed in `core/models/`
 - **Naming**: `equipment-list.component.ts`, `equipment.service.ts`
+- **Tailwind vs Material**: Material injects its component styles after the global stylesheet, so a Tailwind class loses to a Material rule of the same specificity (e.g. `.mat-drawer { width: var(--mat-sidenav-container-width) }`, which is `auto` in indigo-pink). Use the `!` modifier, as in `!w-72` or `!py-4`
 
 ---
 
@@ -191,6 +193,7 @@ npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
 - Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ summary: signal(null) }`)
 - `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
 - Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
+- Karma loads the app's global styles (Material theme + Tailwind), so layout bugs can be tested by measuring rendered elements (`getBoundingClientRect`, `scrollWidth`); see `shell-sidebar-layout.spec.ts`. Roboto isn't loaded in tests, but the fallback font measures within a pixel for the sidebar labels
 - Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
 
 ## How to Run

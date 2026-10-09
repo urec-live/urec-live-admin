@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, Input, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
@@ -32,6 +32,14 @@ interface NavItem {
              class="rounded-lg mx-2 mb-1 text-white hover:bg-indigo-800 transition-colors">
             <mat-icon matListItemIcon class="text-indigo-300">{{ item.icon }}</mat-icon>
             <span matListItemTitle>{{ item.label }}</span>
+            @if (item.route === helpRoute && helpBadge > 0) {
+              <span matListItemMeta
+                    class="!self-center !ml-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-indigo-950 text-xs font-semibold flex items-center justify-center"
+                    data-testid="help-badge"
+                    [attr.aria-label]="helpBadge + (helpBadge === 1 ? ' member needs' : ' members need') + ' staff'">
+                {{ helpBadge }}
+              </span>
+            }
             @if (item.route === issuesRoute && awaitingReview() > 0) {
               <!-- !ml-2 replaces MDC's 28px gap before trailing content, which would squeeze the label -->
               <span matListItemMeta
@@ -55,10 +63,15 @@ interface NavItem {
 export class SidebarComponent {
   private issueService = inject(EquipmentIssueService);
 
+  /** Members waiting for staff (new + "Too busy"), from the shell's HelpRequestStore. */
+  @Input() helpBadge = 0;
+
+  readonly helpRoute = '/help-requests';
   readonly issuesRoute = '/equipment-issues';
 
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    { label: 'Help Requests', icon: 'support_agent', route: this.helpRoute },
     // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
     { label: 'Equipment Issues', icon: 'report_problem', route: this.issuesRoute },

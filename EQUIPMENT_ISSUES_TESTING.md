@@ -23,7 +23,7 @@ The full walkthrough across backend, admin and app is in `urec-live-backend/EQUI
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-You should see `TOTAL: 73 SUCCESS`. The run needs Chrome. The backend isn't needed: HTTP is faked.
+You should see `TOTAL: 142 SUCCESS` for the whole suite, which also covers help requests. The run needs Chrome. The backend isn't needed: HTTP is faked.
 
 Until this branch, `ng test` couldn't run at all, because the CLI-generated `app.component.spec.ts` expected a `title` property and a "Hello" heading that `AppComponent` never had, so it failed to compile. That spec now checks that the app renders its router outlet.
 
@@ -31,9 +31,9 @@ Until this branch, `ng test` couldn't run at all, because the CLI-generated `app
 |---|---|
 | `equipment-issues.component.spec.ts` (36) | Stat cards, including "N out of order" and "Machine affected" (singular) for one machine; one panel per machine with worst severity and report count; reporter and description shown; machines with new reports start open; search and severity filters; empty state; "Show resolved"; status toggles save, refresh the counts and roll back on failure; 30-second auto-refresh. **Confirmations:** "set all" asks with the report count and target status; Cancel sends nothing and puts the toggle back; resolving a single report asks; other single-report changes don't; the dialog says when resolving puts an out-of-order machine back in service. **Live:** a newly filed report reloads the list straight away. **Out of order:** the switch, its chip, rollback, and back in service after resolving. **Withdrawn:** the chip replaces the status buttons; a change to a report that was withdrawn in the meantime (409), or to a machine whose reports all closed (404), explains why and reloads; other errors don't reload |
 | `equipment-issue-store.service.spec.ts` (7) | The first load is a silent baseline (including resolved reports); a new report gets a toast naming the machine and severity, and View opens the page; several arrivals are counted in one toast; a reopened report isn't announced; the summary refreshes every poll; a failed poll is retried; `start()` runs once and `stop()` stops |
-| `dashboard-home.component.spec.ts` (8) | A quiet "N out of order" line under Total Machines (greyed at 0); "Total Machine" when the gym has exactly one; Recent Activity reloads when a new issue arrives; the activity-feed icons, including undo for a withdrawn report |
+| `dashboard-home.component.spec.ts` (9) | A quiet "N out of order" line under Total Machines (greyed at 0); "Total Machine" when the gym has exactly one; Recent Activity reloads when a new issue arrives; the activity-feed icons, including undo for a withdrawn report and the help request icon |
 | `shell-equipment-issues.spec.ts` (1) | The shell starts the store at sign-in and stops it at sign-out |
-| `shell-sidebar-layout.spec.ts` (2) | Measures the real layout in Chrome, with the app's Material theme and Tailwind: the sidebar keeps its width when the first report comes in and never covers the page; "Equipment Issues" isn't cut off next to a badge of 1, 12 or 123 |
+| `shell-sidebar-layout.spec.ts` (3) | Measures the real layout in Chrome, with the app's Material theme and Tailwind: the sidebar keeps its width when the first report or help request comes in and never covers the page; "Equipment Issues" and "Help Requests" aren't cut off next to a badge of 1, 12 or 123 |
 | `equipment-issue.service.spec.ts` (7) | URLs, the `includeResolved` parameter and PUT bodies, including the out-of-order switch; the shared summary signal (and that it's left alone on failure) |
 | `sidebar.component.spec.ts` (4) | The Equipment Issues link; the badge shows the count of reports awaiting review, hides at 0, and updates as soon as the counts change |
 | `equipment-list.component.spec.ts` (2) | "Out of Order" filter option and grey status chip |

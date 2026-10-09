@@ -684,6 +684,7 @@ export class DashboardHomeComponent implements OnInit {
     if (eventType === 'ISSUE_WITHDRAWN') return 'undo';
     if (eventType.startsWith('ISSUE_')) return 'report_problem';
     if (eventType.startsWith('EQUIPMENT_')) return 'build';
+    if (eventType.startsWith('HELP_')) return 'support_agent';
     return 'logout';
   }
 

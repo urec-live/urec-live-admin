@@ -66,6 +66,13 @@ describe('DashboardHomeComponent', () => {
       expect(component.activityIcon('EQUIPMENT_BACK_IN_SERVICE')).toBe('build');
     });
 
+    it('marks help requests with the same icon as the Help Requests link', () => {
+      expect(component.activityIcon('HELP_REQUESTED')).toBe('support_agent');
+      expect(component.activityIcon('HELP_STATUS_CHANGED')).toBe('support_agent');
+      expect(component.activityIcon('HELP_CLOSED')).toBe('support_agent');
+      expect(component.isMaintenanceEvent('HELP_REQUESTED')).toBeFalse();
+    });
+
     it('keeps the existing check-in and check-out icons', () => {
       expect(component.isMaintenanceEvent('CHECK_IN')).toBeFalse();
       expect(component.activityIcon('CHECK_IN')).toBe('login');

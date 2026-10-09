@@ -1,3 +1,7 @@
+## Shared team workflow
+
+Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+
 # CLAUDE.md — UREC Live Admin Dashboard
 
 ## Project Overview
@@ -55,6 +59,9 @@ src/
 │   │   │   ├── exercise.service.ts      # CRUD + link/unlink on /api/admin/exercises
 │   │   │   ├── analytics.service.ts     # Live snapshot, usage, peak hours, user stats
 │   │   │   ├── user.service.ts          # /api/admin/users endpoints
+│   │   │   ├── help-request.service.ts  # /api/admin/help-requests endpoints
+│   │   │   ├── help-request-store.service.ts # Polled help request queue + alerts (toast, chime, tab title)
+│   │   │   ├── chime.service.ts         # Web Audio "cabin call" chime, mute setting
 │   │   │   └── websocket.service.ts     # RxStomp client, /topic/machines observable
 │   │   ├── guards/
 │   │   │   └── auth.guard.ts
@@ -65,12 +72,14 @@ src/
 │   │       ├── equipment.model.ts       # Equipment, CreateEquipmentRequest, EquipmentStatus
 │   │       ├── exercise.model.ts
 │   │       ├── analytics.model.ts       # LiveSnapshot, UsageStats, PeakHours, ActivityLogEntry
+│   │       ├── help-request.model.ts    # HelpRequest, statuses, labels, needsStaff(), outcomeLabel()
 │   │       └── user.model.ts
 │   ├── features/
 │   │   ├── auth/login/                  # Login page (public route)
 │   │   ├── dashboard/
 │   │   │   ├── dashboard-home/          # Summary cards + charts + activity feed
 │   │   │   └── live-monitor/            # Real-time machine status grid
+│   │   ├── help-requests/               # Staff queue for members' "Call staff" requests
 │   │   ├── equipment/
 │   │   │   ├── equipment-list/          # Paginated table + CRUD dialogs + QR print
 │   │   │   └── equipment-form/          # Create/edit dialog component
@@ -101,6 +110,7 @@ src/
 |------|-----------|-------|
 | `/login` | LoginComponent | Public |
 | `/dashboard` | DashboardHomeComponent | Default after login |
+| `/help-requests` | HelpRequestsComponent | Members calling staff to a machine; On the way / Too busy / Done helping |
 | `/equipment` | EquipmentListComponent | Full CRUD |
 | `/equipment-issues` | EquipmentIssuesComponent | Member-reported machine problems; per-report status toggles |
 | `/exercises` | ExercisesComponent | CRUD + equipment linking |
@@ -133,12 +143,20 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Stat cards, search/severity filters, "Show resolved", 30s auto-refresh
 - `EquipmentIssueStore` (root, started/stopped by the shell for the signed-in session) polls every 10 s — open reports plus `loadSummary()`. Polling, not WebSocket (sockjs-client crashes in the browser). The first load (including resolved reports, to learn the highest id) is a silent baseline; later reports get a toast with **View** and are emitted on `arrivals$`, which the Issues page and the Dashboard's Recent Activity reload on. No chime and no tab title — those belong to help requests
 - `EquipmentIssueService.summary` signal (kept current by the store) feeds the page, the sidebar badge (reports awaiting review) and the Dashboard's "N out of order" line under Total Machines
-- The sidebar has a fixed width (`!w-72` = 18rem in the shell) so the badge can't widen it over the page; 18rem plus the badge's `!ml-2` (in place of MDC's 28px trailing gap) keeps "Equipment Issues" uncut next to a 3-digit count. `shell-sidebar-layout.spec.ts` measures this in Chrome
+- The sidebar has a fixed width (`!w-72` = 18rem in the shell) so a badge can't widen it over the page; 18rem plus `!ml-2` on each badge (in place of MDC's 28px trailing gap) keeps "Equipment Issues" and "Help Requests" uncut next to a 3-digit count. `shell-sidebar-layout.spec.ts` measures this in Chrome
 - "Set all open reports to …" always asks first, and so does resolving a single report (`ConfirmDialogComponent`, "Are you sure?"); other single-report changes save straight away
 - Failed saves and cancelled confirmations reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
 - Per-machine "Out of order" switch (`PUT /api/admin/equipment-issues/equipment/{id}/out-of-order`) blocks member check-ins; resolving a machine's last open report puts it back in service (server rule, mirrored locally for single-report changes)
 - Members can withdraw their own open report as filed by mistake. It's then RESOLVED with `withdrawnAt` set: shown with a "Withdrawn by member" chip in place of the status toggle, and the server refuses status changes (409). A 409 on a single report, or a 404 on "set all" (nothing open left), shows why and reloads the list. Withdrawing never changes the machine's status
 - `EquipmentStatus` includes `'Out of Order'` (Equipment page dropdown/filter, live monitor and floor-map editor colour it grey)
+
+### Help Requests (`/help-requests`)
+- Stat cards (New, On the way, Too busy); open queue oldest first with "Waiting N min" (15 s clock) and who is on the way; **On the way / Too busy / Done helping** (disabled per request while saving; a 409/404 says "already closed or changed" and refreshes)
+- **Recently closed** (`GET /history`) with outcome and time to first response; **Sound** switch
+- `HelpRequestStore` polls `GET /api/admin/help-requests` every 5 s for the whole signed-in session (the shell calls `start()`/`stop()`). **Polling, not WebSocket:** `sockjs-client` crashes in the browser (see Testing). The first load is a silent baseline; later arrivals get a toast with **View**, the chime and "(N)" in the tab title
+- The shell passes `needsStaffCount()` (new + Too busy) to the sidebar's `helpBadge` input, an amber badge on Help Requests
+- `ChimeService` synthesises the chime with Web Audio (no sound file); `armUnlock()` resumes audio on the first click/keypress, since browsers block it until then; mute persists in `localStorage`
+- Activity page labels `HELP_REQUESTED`, `HELP_STATUS_CHANGED`, `HELP_CLOSED`
 
 ### Auth
 - Login page with admin role validation (rejects non-ADMIN accounts)
@@ -166,37 +184,6 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 
 ---
 
-## What Still Needs Work
-
-### Polish & Verification
-- **ExercisesComponent** — Exercise CRUD exists in service layer; verify UI is fully connected
-- **UsersComponent** — Service exists (`user.service.ts`); verify list + role change UI works end-to-end
-- **ActivityComponent** — Analytics service has `getActivityLog()`; verify paginated table display
-- **LiveMonitorComponent** — WebSocket service ready; verify live grid uses it properly
-
-### Environment Configuration
-- Both `environment.ts` and `environment.prod.ts` have hardcoded device IP `172.20.1.229`
-- Before production deploy: set `environment.prod.ts` to the real backend domain
-
-### Design Polish
-- Sidebar collapse animation
-- Subtle status-change animations in live monitor
-- Ensure mobile-responsive layout for tablet use by staff
-
----
-
-## Testing
-
-```bash
-npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
-```
-
-- Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ summary: signal(null) }`)
-- `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
-- Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
-- Karma loads the app's global styles (Material theme + Tailwind), so layout bugs can be tested by measuring rendered elements (`getBoundingClientRect`, `scrollWidth`); see `shell-sidebar-layout.spec.ts`. Roboto isn't loaded in tests, but the fallback font measures within a pixel for the sidebar labels
-- Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
-
 ## How to Run
 
 ```bash
@@ -211,6 +198,21 @@ ng build --configuration production
 
 Spring Boot backend must be running for API calls and WebSocket.
 
+## Testing
+
+```bash
+npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
+```
+
+- Fake services with `jasmine.createSpyObj`; pass signals as spy properties (e.g. `{ requests: signal([]) }`, `{ summary: signal(null) }`)
+- `MatSnackBarModule` provides its own `MatSnackBar`, so stub it with `TestBed.overrideProvider`, not `providers`
+- Polling and clocks: `fakeAsync` + `tick`, then `discardPeriodicTasks()` or `fixture.destroy()`
+- `ChimeService` takes its `AudioContext` from the `AUDIO_CONTEXT_FACTORY` token, so specs pass a fake
+- Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
+- Karma loads the app's global styles (Material theme + Tailwind), so layout bugs can be tested by measuring rendered elements (`getBoundingClientRect`, `scrollWidth`); see `shell-sidebar-layout.spec.ts`. Roboto isn't loaded in tests, but the fallback font measures within a pixel for the sidebar labels
+- Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
+- Testing guides: `EQUIPMENT_ISSUES_TESTING.md` and `HELP_REQUESTS_TESTING.md`
+
 ---
 
 ## Design Guidelines
@@ -220,12 +222,3 @@ Spring Boot backend must be running for API calls and WebSocket.
 - Live monitor should feel "alive" — subtle animations on status changes
 - Charts: simple and glanceable (gym manager has 30 seconds)
 - Mobile-responsive for tablet use by staff
-
----
-
-## Roadmap
-
-- **Phase 1 (NOW)**: Core dashboard mostly complete — polish remaining screens
-- **Phase 2**: Advanced analytics, push notification management, exercise GIF uploads
-- **Phase 3**: Multi-tenant support (each gym gets their own branded dashboard), billing
-- **Phase 4**: White-label theming, API keys for gym integrations

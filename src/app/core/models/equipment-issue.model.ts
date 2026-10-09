@@ -13,6 +13,8 @@ export interface EquipmentIssueReport {
   reportedAt: string;
   updatedAt: string;
   resolvedAt: string | null;
+  /** Set when the member took the report back as a mistake. It's then RESOLVED and can't be changed. */
+  withdrawnAt: string | null;
 }
 
 /** One machine on the Equipment Issues page with its reports (newest first). */

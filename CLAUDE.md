@@ -137,6 +137,7 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - "Set all open reports to …" always asks first, and so does resolving a single report (`ConfirmDialogComponent`, "Are you sure?"); other single-report changes save straight away
 - Failed saves and cancelled confirmations reset the toggle explicitly via its `MatButtonToggleGroup` ref — the `[value]` binding alone can't undo a click when nothing changed in between
 - Per-machine "Out of order" switch (`PUT /api/admin/equipment-issues/equipment/{id}/out-of-order`) blocks member check-ins; resolving a machine's last open report puts it back in service (server rule, mirrored locally for single-report changes)
+- Members can withdraw their own open report as filed by mistake. It's then RESOLVED with `withdrawnAt` set: shown with a "Withdrawn by member" chip in place of the status toggle, and the server refuses status changes (409). A 409 on a single report, or a 404 on "set all" (nothing open left), shows why and reloads the list. Withdrawing never changes the machine's status
 - `EquipmentStatus` includes `'Out of Order'` (Equipment page dropdown/filter, live monitor and floor-map editor colour it grey)
 
 ### Auth

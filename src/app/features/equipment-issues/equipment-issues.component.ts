@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, interval } from 'rxjs';
@@ -282,21 +283,32 @@ function withDerivedFields(group: EquipmentIssueGroup): EquipmentIssueGroup {
                       <span class="text-xs text-gray-400">{{ report.reportedAt | date:'MMM d, y, h:mm a' }}</span>
                     </div>
                     <p class="text-sm text-gray-700 whitespace-pre-line break-words">{{ report.description }}</p>
-                    @if (report.resolvedAt) {
+                    @if (report.withdrawnAt) {
+                      <p class="text-xs text-gray-500 mt-1">
+                        Withdrawn by {{ report.reporterUsername }} {{ report.withdrawnAt | date:'MMM d, y, h:mm a' }} · reported by mistake
+                      </p>
+                    } @else if (report.resolvedAt) {
                       <p class="text-xs text-green-600 mt-1">Resolved {{ report.resolvedAt | date:'MMM d, y, h:mm a' }}</p>
                     }
                   </div>
-                  <mat-button-toggle-group
-                    #reportToggle="matButtonToggleGroup"
-                    class="issue-toggle"
-                    [value]="report.status"
-                    (change)="onReportStatusChange(report, $event.value, reportToggle)"
-                    [disabled]="savingReports().has(report.id)"
-                    [attr.aria-label]="'Status for report ' + report.id">
-                    @for (status of statuses; track status) {
-                      <mat-button-toggle [value]="status">{{ statusLabels[status] }}</mat-button-toggle>
-                    }
-                  </mat-button-toggle-group>
+                  @if (report.withdrawnAt) {
+                    <!-- The member took it back, so the server keeps it closed -->
+                    <span class="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-600"
+                          matTooltip="The member took this report back, so it stays closed"
+                          [attr.data-testid]="'withdrawn-' + report.id">Withdrawn by member</span>
+                  } @else {
+                    <mat-button-toggle-group
+                      #reportToggle="matButtonToggleGroup"
+                      class="issue-toggle"
+                      [value]="report.status"
+                      (change)="onReportStatusChange(report, $event.value, reportToggle)"
+                      [disabled]="savingReports().has(report.id)"
+                      [attr.aria-label]="'Status for report ' + report.id">
+                      @for (status of statuses; track status) {
+                        <mat-button-toggle [value]="status">{{ statusLabels[status] }}</mat-button-toggle>
+                      }
+                    </mat-button-toggle-group>
+                  }
                 </div>
               </div>
             }
@@ -466,13 +478,20 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
           );
           this.refreshSummary();
         },
-        error: () => {
+        error: (err: unknown) => {
           this.patchReport(report.equipmentId, report.id, { status: previous });
           // Reset the toggle directly: if the failure lands in the same change-detection turn as
           // the click, the [value] binding never sees a change and would leave the toggle on.
           if (toggle) toggle.value = previous;
           this.markSaving(this.savingReports, report.id, false);
-          this.snackBar.open('Failed to update status', 'Dismiss', { duration: 3000 });
+          if (err instanceof HttpErrorResponse && err.status === 409) {
+            // The member withdrew it while this page was open
+            this.snackBar.open(`${report.reporterUsername} withdrew this report, so it can't be changed`,
+              'Dismiss', { duration: 4000 });
+            this.loadGroups();
+          } else {
+            this.snackBar.open('Failed to update status', 'Dismiss', { duration: 3000 });
+          }
         },
       });
   }
@@ -506,12 +525,19 @@ export class EquipmentIssuesComponent implements OnInit, OnDestroy {
           );
           this.refreshSummary();
         },
-        error: () => {
+        error: (err: unknown) => {
           this.updateReports(group.equipmentId, (r) => ({ ...r, status: previous.get(r.id) ?? r.status }));
           // `group` is the pre-change snapshot, so this is the status the toggle showed before
           if (toggle) toggle.value = this.machineStatus(group);
           this.markSaving(this.savingMachines, group.equipmentId, false);
-          this.snackBar.open('Failed to update status', 'Dismiss', { duration: 3000 });
+          if (err instanceof HttpErrorResponse && err.status === 404) {
+            // Nothing open is left, e.g. the members withdrew their reports while this page was open
+            this.snackBar.open(`The open reports on ${group.equipmentName} were closed in the meantime`,
+              'Dismiss', { duration: 4000 });
+            this.loadGroups();
+          } else {
+            this.snackBar.open('Failed to update status', 'Dismiss', { duration: 3000 });
+          }
         },
       });
   }

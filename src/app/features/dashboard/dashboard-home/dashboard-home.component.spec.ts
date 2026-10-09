@@ -54,6 +54,11 @@ describe('DashboardHomeComponent', () => {
       expect(component.activityIcon('ISSUE_REPORTED')).toBe('report_problem');
     });
 
+    it('marks a report the member withdrew with an undo icon', () => {
+      expect(component.isMaintenanceEvent('ISSUE_WITHDRAWN')).toBeTrue();
+      expect(component.activityIcon('ISSUE_WITHDRAWN')).toBe('undo');
+    });
+
     it('marks machines going out of or back into service with a build icon', () => {
       expect(component.isMaintenanceEvent('EQUIPMENT_OUT_OF_ORDER')).toBeTrue();
       expect(component.isMaintenanceEvent('EQUIPMENT_BACK_IN_SERVICE')).toBeTrue();

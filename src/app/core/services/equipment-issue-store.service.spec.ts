@@ -28,6 +28,7 @@ function report(id: number, overrides: Partial<EquipmentIssueReport> = {}): Equi
     reportedAt: NOW,
     updatedAt: NOW,
     resolvedAt: null,
+    withdrawnAt: null,
     ...overrides,
   };
 }

@@ -24,6 +24,12 @@ describe('ActivityComponent', () => {
     expect(component.eventClass('ISSUE_STATUS_CHANGED')).toBe('bg-sky-100 text-sky-700');
   });
 
+  it('labels reports members withdrew as filed by mistake', () => {
+    expect(component.eventTypes).toContain('ISSUE_WITHDRAWN');
+    expect(component.formatEventType('ISSUE_WITHDRAWN')).toBe('Issue Withdrawn');
+    expect(component.eventClass('ISSUE_WITHDRAWN')).toBe('bg-slate-100 text-slate-700');
+  });
+
   it('labels machines going out of and back into service', () => {
     expect(component.eventTypes).toContain('EQUIPMENT_OUT_OF_ORDER');
     expect(component.eventTypes).toContain('EQUIPMENT_BACK_IN_SERVICE');

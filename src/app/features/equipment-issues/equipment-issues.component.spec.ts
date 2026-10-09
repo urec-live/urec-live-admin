@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { WritableSignal, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -35,6 +36,7 @@ function report(overrides: Partial<EquipmentIssueReport>): EquipmentIssueReport 
     reportedAt: NOW,
     updatedAt: NOW,
     resolvedAt: null,
+    withdrawnAt: null,
     ...overrides,
   };
 }
@@ -414,6 +416,66 @@ describe('EquipmentIssuesComponent', () => {
 
     expect(dialog.open).not.toHaveBeenCalled();
     expect(service.updateStatus).toHaveBeenCalledOnceWith(1, 'ACKNOWLEDGED');
+  });
+
+  // ── Reports members withdrew ──────────────────────────────────────────────
+
+  it('marks a report the member withdrew and offers no status toggle for it', () => {
+    const withdrawnAt = new Date().toISOString();
+    const [legPress] = groups();
+    service.getGrouped.and.returnValue(of([{
+      ...legPress,
+      openReportCount: 1,
+      reports: [
+        legPress.reports[0],
+        { ...legPress.reports[1], status: 'RESOLVED', resolvedAt: withdrawnAt, withdrawnAt },
+      ],
+    }]));
+    render();
+
+    expect(el().querySelector('[data-testid="withdrawn-2"]')?.textContent?.trim()).toBe('Withdrawn by member');
+    expect(text('[data-testid="report-2"]')).toContain('Withdrawn by asmith');
+    expect(text('[data-testid="report-2"]')).toContain('reported by mistake');
+    expect(text('[data-testid="report-2"]')).not.toContain('Resolved');
+    expect(el().querySelector('[data-testid="report-2"] mat-button-toggle-group')).toBeNull();
+    // Open reports keep their toggle
+    expect(el().querySelector('[data-testid="report-1"] mat-button-toggle-group')).not.toBeNull();
+  });
+
+  it('explains and reloads when the member withdrew the report while the page was open', () => {
+    service.updateStatus.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    render();
+    expect(service.getGrouped).toHaveBeenCalledTimes(1);
+
+    toggleButtons('report-1')[1].click(); // Acknowledged
+    fixture.detectChanges();
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      "jdoe withdrew this report, so it can't be changed", 'Dismiss', jasmine.any(Object));
+    expect(text('[data-testid="report-1"] .mat-button-toggle-checked')).toBe('New');
+    expect(service.getGrouped).toHaveBeenCalledTimes(2);
+  });
+
+  it('explains and reloads when nothing on a machine is open any more', () => {
+    service.updateMachineStatus.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    render();
+
+    component.onMachineStatusChange(component.groups()[0], 'IN_PROGRESS');
+
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'The open reports on Leg Press were closed in the meantime', 'Dismiss', jasmine.any(Object));
+    expect(service.getGrouped).toHaveBeenCalledTimes(2);
+  });
+
+  it('still says a save failed for other errors, without reloading', () => {
+    service.updateStatus.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    render();
+
+    toggleButtons('report-1')[1].click(); // Acknowledged
+    fixture.detectChanges();
+
+    expect(snackBar.open).toHaveBeenCalledWith('Failed to update status', 'Dismiss', jasmine.any(Object));
+    expect(service.getGrouped).toHaveBeenCalledTimes(1);
   });
 
   // ── Live updates ──────────────────────────────────────────────────────────

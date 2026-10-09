@@ -681,6 +681,7 @@ export class DashboardHomeComponent implements OnInit {
 
   activityIcon(eventType: string): string {
     if (eventType === 'CHECK_IN') return 'login';
+    if (eventType === 'ISSUE_WITHDRAWN') return 'undo';
     if (eventType.startsWith('ISSUE_')) return 'report_problem';
     if (eventType.startsWith('EQUIPMENT_')) return 'build';
     return 'logout';

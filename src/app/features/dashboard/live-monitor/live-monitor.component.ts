@@ -156,6 +156,7 @@ export class LiveMonitorComponent implements OnInit, OnDestroy {
       case 'Available': return 'bg-green-50 border border-green-200';
       case 'In Use': return 'bg-red-50 border border-red-200';
       case 'Reserved': return 'bg-yellow-50 border border-yellow-200';
+      case 'Out of Order': return 'bg-gray-100 border border-gray-300';
       default: return 'bg-gray-50 border border-gray-200';
     }
   }
@@ -165,6 +166,7 @@ export class LiveMonitorComponent implements OnInit, OnDestroy {
       case 'Available': return 'text-green-500';
       case 'In Use': return 'text-red-500';
       case 'Reserved': return 'text-yellow-500';
+      case 'Out of Order': return 'text-gray-500';
       default: return 'text-gray-400';
     }
   }
@@ -174,6 +176,7 @@ export class LiveMonitorComponent implements OnInit, OnDestroy {
       case 'Available': return 'bg-green-100 text-green-700';
       case 'In Use': return 'bg-red-100 text-red-700';
       case 'Reserved': return 'bg-yellow-100 text-yellow-700';
+      case 'Out of Order': return 'bg-gray-200 text-gray-700';
       default: return 'bg-gray-100 text-gray-600';
     }
   }

@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
+import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
 
 interface NavItem {
   label: string;
@@ -33,10 +34,19 @@ interface NavItem {
             <span matListItemTitle>{{ item.label }}</span>
             @if (item.route === helpRoute && helpBadge > 0) {
               <span matListItemMeta
-                    class="!self-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-indigo-950 text-xs font-semibold flex items-center justify-center"
+                    class="!self-center !ml-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-amber-400 text-indigo-950 text-xs font-semibold flex items-center justify-center"
                     data-testid="help-badge"
                     [attr.aria-label]="helpBadge + (helpBadge === 1 ? ' member needs' : ' members need') + ' staff'">
                 {{ helpBadge }}
+              </span>
+            }
+            @if (item.route === issuesRoute && awaitingReview() > 0) {
+              <!-- !ml-2 replaces MDC's 28px gap before trailing content, which would squeeze the label -->
+              <span matListItemMeta
+                    class="!self-center !ml-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center"
+                    data-testid="issues-badge"
+                    [attr.aria-label]="awaitingReview() + ' equipment reports awaiting review'">
+                {{ awaitingReview() }}
               </span>
             }
           </a>
@@ -51,19 +61,29 @@ interface NavItem {
   `
 })
 export class SidebarComponent {
+  private issueService = inject(EquipmentIssueService);
+
   /** Members waiting for staff (new + "Too busy"), from the shell's HelpRequestStore. */
   @Input() helpBadge = 0;
 
   readonly helpRoute = '/help-requests';
+  readonly issuesRoute = '/equipment-issues';
 
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { label: 'Help Requests', icon: 'support_agent', route: this.helpRoute },
     // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
+    { label: 'Equipment Issues', icon: 'report_problem', route: this.issuesRoute },
     { label: 'Floor Map', icon: 'layers', route: '/floor-map' },
     { label: 'Exercises', icon: 'directions_run', route: '/exercises' },
     { label: 'Users', icon: 'group', route: '/users' },
     { label: 'Activity', icon: 'history', route: '/activity' }
   ];
+
+  /**
+   * New reports nobody has reviewed yet, badged so admins notice them from any page. EquipmentIssueStore
+   * (started by the shell) keeps the summary current.
+   */
+  awaitingReview = computed(() => this.issueService.summary()?.reported ?? 0);
 }

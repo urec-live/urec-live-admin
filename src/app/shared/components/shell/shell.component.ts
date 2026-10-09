@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
+import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
 import { HelpRequestStore } from '../../../core/services/help-request-store.service';
 
 @Component({
@@ -11,7 +12,9 @@ import { HelpRequestStore } from '../../../core/services/help-request-store.serv
   imports: [RouterOutlet, MatSidenavModule, SidebarComponent, TopbarComponent],
   template: `
     <mat-sidenav-container class="h-screen">
-      <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="w-64" fixedInViewport>
+      <!-- The ! matters: Material's own width rule (auto in this theme) loads after Tailwind, and an auto-width
+           sidebar grows when a badge appears and covers the page. 18rem fits the badged labels. -->
+      <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="!w-72" fixedInViewport>
         <app-sidebar [helpBadge]="helpRequests.needsStaffCount()" />
       </mat-sidenav>
 
@@ -27,14 +30,18 @@ import { HelpRequestStore } from '../../../core/services/help-request-store.serv
 export class ShellComponent implements OnInit, OnDestroy {
   /** Watches for members calling staff on every page of the signed-in dashboard. */
   readonly helpRequests = inject(HelpRequestStore);
+  /** Watches for new equipment issue reports on every page of the signed-in dashboard. */
+  readonly equipmentIssues = inject(EquipmentIssueStore);
 
   sidenavOpen = true;
 
   ngOnInit(): void {
     this.helpRequests.start();
+    this.equipmentIssues.start();
   }
 
   ngOnDestroy(): void {
     this.helpRequests.stop();
+    this.equipmentIssues.stop();
   }
 }

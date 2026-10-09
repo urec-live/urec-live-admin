@@ -87,7 +87,7 @@ export class EquipmentFormComponent implements OnInit {
   readonly data = inject<EquipmentFormData>(MAT_DIALOG_DATA);
   private fb = inject(FormBuilder);
 
-  statuses: EquipmentStatus[] = ['Available', 'In Use', 'Reserved'];
+  statuses: EquipmentStatus[] = ['Available', 'In Use', 'Reserved', 'Out of Order'];
   form!: FormGroup;
 
   get isEdit(): boolean {

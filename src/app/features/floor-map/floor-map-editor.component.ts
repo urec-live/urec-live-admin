@@ -194,6 +194,7 @@ interface CanvasEquipment extends FloorPlanEquipment {
                             [class.bg-green-500]="eq.status === 'Available'"
                             [class.bg-red-500]="eq.status === 'In Use'"
                             [class.bg-orange-500]="eq.status === 'Reserved'"
+                            [class.bg-gray-500]="eq.status === 'Out of Order'"
                             [class.ring-2]="eq.isDirty"
                             [class.ring-amber-400]="eq.isDirty"
                           >

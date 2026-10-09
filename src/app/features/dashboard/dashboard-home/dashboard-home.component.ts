@@ -19,6 +19,8 @@ import {
   Legend,
 } from 'chart.js';
 import { AnalyticsService } from '../../../core/services/analytics.service';
+import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
+import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
 import { LiveSnapshot, UsageStats, PeakHours, ActivityLogEntry } from '../../../core/models/analytics.model';
 
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -113,7 +115,17 @@ Chart.register(gradientBarPlugin);
           <div class="stat-icon-wrap"><mat-icon>fitness_center</mat-icon></div>
           <div class="stat-info">
             <p class="stat-value">{{ snapshot?.totalMachines ?? '—' }}</p>
-            <p class="stat-label">Total Machines</p>
+            <p class="stat-label">Total {{ snapshot?.totalMachines === 1 ? 'Machine' : 'Machines' }}</p>
+            @if (issueSummary(); as issues) {
+              <p class="mt-1 flex items-center gap-1 text-xs"
+                 [class.text-gray-400]="issues.outOfOrderMachines === 0"
+                 [class.font-medium]="issues.outOfOrderMachines > 0"
+                 [class.text-gray-600]="issues.outOfOrderMachines > 0"
+                 data-testid="out-of-order-count">
+                <mat-icon class="!text-sm !w-3.5 !h-3.5 !leading-none">build</mat-icon>
+                {{ issues.outOfOrderMachines }} out of order
+              </p>
+            }
           </div>
           <div class="stat-glow stat-glow-indigo"></div>
         </div>
@@ -229,8 +241,9 @@ Chart.register(gradientBarPlugin);
               <div class="activity-item">
                 <div class="activity-icon-wrap"
                   [class.activity-checkin]="entry.eventType === 'CHECK_IN'"
-                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN'">
-                  <mat-icon>{{ entry.eventType === 'CHECK_IN' ? 'login' : 'logout' }}</mat-icon>
+                  [class.activity-issue]="isMaintenanceEvent(entry.eventType)"
+                  [class.activity-checkout]="entry.eventType !== 'CHECK_IN' && !isMaintenanceEvent(entry.eventType)">
+                  <mat-icon>{{ activityIcon(entry.eventType) }}</mat-icon>
                 </div>
                 <div class="activity-text">
                   <span class="activity-name">{{ entry.username }}</span>
@@ -452,6 +465,7 @@ Chart.register(gradientBarPlugin);
     .activity-icon-wrap mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .activity-checkin  { background: rgba(34,197,94,.12); color: #16a34a; }
     .activity-checkout { background: rgba(148,163,184,.15); color: #64748b; }
+    .activity-issue    { background: rgba(245,158,11,.14); color: #d97706; }
     .activity-text {
       flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0;
     }
@@ -465,6 +479,9 @@ Chart.register(gradientBarPlugin);
 })
 export class DashboardHomeComponent implements OnInit {
   private analyticsService = inject(AnalyticsService);
+  private issueStore = inject(EquipmentIssueStore);
+  /** Kept current by EquipmentIssueStore; feeds the "N out of order" line. */
+  readonly issueSummary = inject(EquipmentIssueService).summary;
 
   snapshot: LiveSnapshot | null = null;
   period: 'week' | 'month' = 'week';
@@ -563,11 +580,19 @@ export class DashboardHomeComponent implements OnInit {
       .pipe(startWith(0), takeUntilDestroyed(this.destroyRef), switchMap(() => this.analyticsService.getLiveSnapshot()))
       .subscribe((snap) => (this.snapshot = snap));
 
+    this.loadActivity();
+    // A newly filed equipment issue appears in Recent Activity without a page refresh
+    this.issueStore.arrivals$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadActivity());
+
+    this.loadCharts();
+  }
+
+  private loadActivity(): void {
     this.analyticsService.getActivityLog(0, 10)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((log) => (this.activityLog = log));
-
-    this.loadCharts();
   }
 
   onPeriodChange(period: 'week' | 'month'): void {
@@ -647,6 +672,20 @@ export class DashboardHomeComponent implements OnInit {
     if (h === 12) return '12p';
     if (h % 3 !== 0) return '';
     return h < 12 ? `${h}a` : `${h - 12}p`;
+  }
+
+  /** Issue reports and machines going out of / back into service */
+  isMaintenanceEvent(eventType: string): boolean {
+    return eventType.startsWith('ISSUE_') || eventType.startsWith('EQUIPMENT_');
+  }
+
+  activityIcon(eventType: string): string {
+    if (eventType === 'CHECK_IN') return 'login';
+    if (eventType === 'ISSUE_WITHDRAWN') return 'undo';
+    if (eventType.startsWith('ISSUE_')) return 'report_problem';
+    if (eventType.startsWith('EQUIPMENT_')) return 'build';
+    if (eventType.startsWith('HELP_')) return 'support_agent';
+    return 'logout';
   }
 
   relativeTime(timestamp: string): string {

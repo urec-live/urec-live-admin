@@ -29,6 +29,8 @@ import { ActivityLogEntry, ActivitySummary } from '../../core/models/activity.mo
 
 const EVENT_TYPES = ['CHECK_IN', 'CHECK_OUT', 'SESSION_SAVED', 'REGISTRATION',
                      'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER',
+                     'ISSUE_REPORTED', 'ISSUE_STATUS_CHANGED', 'ISSUE_WITHDRAWN',
+                     'EQUIPMENT_OUT_OF_ORDER', 'EQUIPMENT_BACK_IN_SERVICE',
                      'HELP_REQUESTED', 'HELP_STATUS_CHANGED', 'HELP_CLOSED'];
 
 const DATE_PRESETS = [
@@ -417,6 +419,11 @@ export class ActivityComponent implements OnInit, OnDestroy {
       ADMIN_CREATE_USER: 'User Created',
       ADMIN_UPDATE_ROLES:'Roles Updated',
       ADMIN_DELETE_USER: 'User Deleted',
+      ISSUE_REPORTED:    'Issue Reported',
+      ISSUE_STATUS_CHANGED: 'Issue Updated',
+      ISSUE_WITHDRAWN:   'Issue Withdrawn',
+      EQUIPMENT_OUT_OF_ORDER: 'Out of Order',
+      EQUIPMENT_BACK_IN_SERVICE: 'Back in Service',
       HELP_REQUESTED:    'Help Requested',
       HELP_STATUS_CHANGED: 'Help Response',
       HELP_CLOSED:       'Help Closed',
@@ -433,6 +440,11 @@ export class ActivityComponent implements OnInit, OnDestroy {
       case 'ADMIN_CREATE_USER': return 'bg-teal-100 text-teal-700';
       case 'ADMIN_UPDATE_ROLES':return 'bg-amber-100 text-amber-700';
       case 'ADMIN_DELETE_USER': return 'bg-red-100 text-red-700';
+      case 'ISSUE_REPORTED':    return 'bg-orange-100 text-orange-700';
+      case 'ISSUE_STATUS_CHANGED': return 'bg-sky-100 text-sky-700';
+      case 'ISSUE_WITHDRAWN':   return 'bg-slate-100 text-slate-700';
+      case 'EQUIPMENT_OUT_OF_ORDER': return 'bg-gray-200 text-gray-700';
+      case 'EQUIPMENT_BACK_IN_SERVICE': return 'bg-emerald-100 text-emerald-700';
       case 'HELP_REQUESTED':    return 'bg-yellow-100 text-yellow-800';
       case 'HELP_STATUS_CHANGED': return 'bg-lime-100 text-lime-800';
       case 'HELP_CLOSED':       return 'bg-cyan-100 text-cyan-700';

@@ -1,0 +1,59 @@
+export type IssueSeverity = 'OUT_OF_ORDER' | 'DAMAGED';
+export type IssueStatus = 'REPORTED' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'RESOLVED';
+
+export interface EquipmentIssueReport {
+  id: number;
+  equipmentId: number;
+  equipmentName: string;
+  equipmentCode: string | null;
+  severity: IssueSeverity;
+  description: string;
+  status: IssueStatus;
+  reporterUsername: string;
+  reportedAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  /** Set when the member took the report back as a mistake. It's then RESOLVED and can't be changed. */
+  withdrawnAt: string | null;
+}
+
+/** One machine on the Equipment Issues page with its reports (newest first). */
+export interface EquipmentIssueGroup {
+  equipmentId: number;
+  equipmentName: string;
+  equipmentCode: string | null;
+  equipmentStatus: string; // the machine's status, e.g. 'Out of Order'
+  openReportCount: number;
+  worstSeverity: IssueSeverity | null; // across open reports; null when all are resolved
+  latestReportedAt: string;
+  reports: EquipmentIssueReport[];
+}
+
+export interface EquipmentIssueSummary {
+  reported: number;
+  acknowledged: number;
+  inProgress: number;
+  affectedMachines: number;
+  outOfOrderMachines: number;
+}
+
+export const OUT_OF_ORDER = 'Out of Order';
+
+export function isOutOfOrder(status: string | null | undefined): boolean {
+  return status?.trim().toLowerCase() === OUT_OF_ORDER.toLowerCase();
+}
+
+/** Statuses in the order staff move a report along. */
+export const ISSUE_STATUSES: IssueStatus[] = ['REPORTED', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED'];
+
+export const ISSUE_STATUS_LABELS: Record<IssueStatus, string> = {
+  REPORTED: 'New',
+  ACKNOWLEDGED: 'Acknowledged',
+  IN_PROGRESS: 'Repairing',
+  RESOLVED: 'Resolved',
+};
+
+export const ISSUE_SEVERITY_LABELS: Record<IssueSeverity, string> = {
+  OUT_OF_ORDER: 'Not working',
+  DAMAGED: 'Damaged',
+};

@@ -23,7 +23,7 @@ The full walkthrough across backend, admin and app is in `urec-live-backend/HELP
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-You should see `TOTAL: 69 SUCCESS`. The run needs Chrome. The backend isn't needed: HTTP is faked.
+You should see `TOTAL: 142 SUCCESS` for the whole suite, which also covers equipment issues. The run needs Chrome. The backend isn't needed: HTTP is faked.
 
 | Spec | What it covers |
 |---|---|

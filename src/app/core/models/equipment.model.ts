@@ -1,6 +1,7 @@
 import { Exercise } from './exercise.model';
 
-export type EquipmentStatus = 'Available' | 'In Use' | 'Reserved';
+/** 'Out of Order' blocks member check-ins; only admins can set it. */
+export type EquipmentStatus = 'Available' | 'In Use' | 'Reserved' | 'Out of Order';
 
 export interface Equipment {
   id: number;

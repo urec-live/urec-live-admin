@@ -1,27 +1,40 @@
-# UrecLiveAdmin
+# UREC Live Admin Dashboard
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.17.
+Angular 17 staff dashboard for UREC Live. It manages equipment, exercises, users, floor plans, help requests, activity logs, analytics, and live equipment status.
 
-## Development server
+## Before you start
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Read `TEAM_WORKFLOW.md` and `CLAUDE.md`. The backend must be running for API, auth, and WebSocket flows.
 
-## Code scaffolding
+```bash
+npm ci
+npm start
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Open http://localhost:4200. Local browser sessions target `http://localhost:8080`; non-local and production builds use the Railway backend configured in `src/environments/environment*.ts`.
 
-## Build
+## Checks
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm run build
+npm test -- --watch=false --browsers=ChromeHeadless
+```
 
-## Running unit tests
+A successful build is not proof that login roles, APIs, WebSockets, or the hosted deployment work. Exercise the affected flow against the agreed backend revision.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Implemented routes
 
-## Running end-to-end tests
+- `/dashboard` — live summary, usage/peak charts, and recent activity
+- `/help-requests` — staff queue, responses, history, and alerts
+- `/equipment` — equipment CRUD and QR printing
+- `/exercises` — exercise CRUD and equipment linking
+- `/users` — user creation, role changes, and deletion
+- `/activity` — filtered activity log and summary
+- `/live-monitor` — live machine state
+- `/floor-map` — floor CRUD and equipment positioning
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+The backend also exposes equipment-issue administration APIs, but this checkout has no dashboard route/service for them.
 
-## Further help
+## Deployment
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+`vercel.json` configures the SPA deployment. Confirm the current Vercel deployment and backend connectivity separately; repository configuration alone is not deployment proof.

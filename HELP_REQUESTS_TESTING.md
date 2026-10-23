@@ -1,6 +1,6 @@
 # Testing: "Call staff" help requests (admin dashboard)
 
-This branch adds:
+The checked-out dashboard includes:
 - the **Help Requests** page (`/help-requests`):
   - stat cards for New, On the way and Too busy
   - the open queue, longest waiting first. Each card shows the machine, code, status, member, exercise, floor, a ticking "Waiting N min" and who is on the way.
@@ -15,7 +15,7 @@ How it fits together:
 - The first load after sign-in is a silent baseline. Only requests that arrive after it ring.
 - `ChimeService` synthesises the chime with Web Audio, so there's no sound file. Browsers block audio until the page has had a click or keypress, so the first interaction unlocks it. Muting is remembered in `localStorage`.
 
-The full walkthrough across backend, admin and app is in `urec-live-backend/HELP_REQUESTS_TESTING.md`.
+The full walkthrough across backend, admin, and app is in [`../backend/HELP_REQUESTS_TESTING.md`](../backend/HELP_REQUESTS_TESTING.md).
 
 ## Automated tests
 
@@ -23,7 +23,7 @@ The full walkthrough across backend, admin and app is in `urec-live-backend/HELP
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-You should see `TOTAL: 142 SUCCESS` for the whole suite, which also covers equipment issues. The run needs Chrome. The backend isn't needed: HTTP is faked.
+The run needs Chrome. The backend isn't needed because HTTP is faked. Report the current runner result rather than relying on a historical test count.
 
 | Spec | What it covers |
 |---|---|

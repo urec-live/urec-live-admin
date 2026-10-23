@@ -10,7 +10,7 @@ UREC Live is a gym management and fitness tracking platform. This repo is the **
 
 **Business purpose:** The admin dashboard is what turns UREC Live from "a fitness app" into "a gym management platform" — it's what we sell to gym owners.
 
-**Current stage:** Core dashboard is built. Equipment CRUD, live analytics, and usage charts are functional. Some secondary screens (Users, Activity log, Live Monitor) exist but may need polish.
+**Current source scope:** Dashboard analytics, equipment/exercise/user management, activity logs, live monitoring, staff help requests, and floor-map editing are implemented. Source presence is not proof that every flow has passed hosted end-to-end validation.
 
 ---
 
@@ -43,7 +43,7 @@ UREC Live is a gym management and fitness tracking platform. This repo is the **
 - **Admin endpoints**: All under `/api/admin/**` — ADMIN role required
 - **WebSocket**: STOMP over SockJS at `/ws`, subscribe to `/topic/machines`
 - **Environment config**: `src/environments/environment.ts` (dev) / `environment.prod.ts` (prod)
-  - Both currently set to `http://172.20.1.229:8080` — update when network changes
+  - Local browser sessions use `http://localhost:8080`; non-local/prod builds use the configured Railway backend origin.
 
 ---
 
@@ -58,7 +58,9 @@ src/
 │   │   │   ├── equipment.service.ts     # CRUD on /api/admin/equipment
 │   │   │   ├── exercise.service.ts      # CRUD + link/unlink on /api/admin/exercises
 │   │   │   ├── analytics.service.ts     # Live snapshot, usage, peak hours, user stats
+│   │   │   ├── activity.service.ts      # Activity list, filters, and summary
 │   │   │   ├── user.service.ts          # /api/admin/users endpoints
+│   │   │   ├── floor-plan.service.ts    # Floor CRUD and equipment positions
 │   │   │   ├── help-request.service.ts  # /api/admin/help-requests endpoints
 │   │   │   ├── help-request-store.service.ts # Polled help request queue + alerts (toast, chime, tab title)
 │   │   │   ├── chime.service.ts         # Web Audio "cabin call" chime, mute setting
@@ -85,7 +87,8 @@ src/
 │   │   │   └── equipment-form/          # Create/edit dialog component
 │   │   ├── exercises/                   # Exercise management
 │   │   ├── users/                       # User management + role assignment
-│   │   └── activity/                    # Activity log view
+│   │   ├── activity/                    # Activity log view
+│   │   └── floor-map/                   # Floor CRUD and equipment positioning
 │   ├── shared/
 │   │   ├── components/
 │   │   │   ├── sidebar/                 # Collapsible nav sidebar
@@ -97,8 +100,8 @@ src/
 │   ├── app.routes.ts
 │   └── app.config.ts
 ├── environments/
-│   ├── environment.ts       # dev: apiUrl, wsUrl (currently 172.20.1.229)
-│   └── environment.prod.ts  # prod: same IP — needs real domain before deploy
+│   ├── environment.ts       # localhost in local browser; Railway otherwise
+│   └── environment.prod.ts  # Railway backend origin
 └── styles.scss
 ```
 
@@ -117,6 +120,7 @@ src/
 | `/users` | UsersComponent | List + role management |
 | `/activity` | ActivityComponent | Activity feed |
 | `/live-monitor` | LiveMonitorComponent | Real-time machine grid |
+| `/floor-map` | FloorMapEditorComponent | Floor CRUD + drag-and-drop equipment positions |
 
 All routes except `/login` are wrapped in `ShellComponent` and protected by `AuthGuard`.
 
@@ -169,6 +173,12 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Auto-reconnects on disconnect (5 attempts, exponential backoff)
 - Disconnects on logout
 
+### Exercises, Users, Activity, and Floor Maps
+- Exercise CRUD and equipment linking are wired through `ExerciseService`.
+- User creation, role updates, deletion, search, and filtering are wired through `UserService`.
+- Activity summary, filtering, pagination, and refresh are wired through `ActivityService`.
+- Floor plans support create/update/delete, unassigned equipment, drag positioning, bulk save, and removal.
+
 ---
 
 ## Coding Conventions
@@ -184,12 +194,19 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 
 ---
 
+## Validation still required
+
+- Run each affected flow against the agreed backend revision; a successful Angular build is not API, WebSocket, auth-role, or hosted-deployment proof.
+- Validate localhost and hosted environment routing separately.
+
+---
+
 ## How to Run
 
 ```bash
-# Requires: Node 18+, Angular CLI 17+
-npm install
-ng serve
+# Requires a Node/npm version validated for this repository
+npm ci
+npm start
 # Opens at http://localhost:4200
 
 # Build for production
@@ -222,3 +239,9 @@ npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
 - Live monitor should feel "alive" — subtle animations on status changes
 - Charts: simple and glanceable (gym manager has 30 seconds)
 - Mobile-responsive for tablet use by staff
+
+---
+
+## Roadmap
+
+Historical roadmap ideas such as advanced analytics, push notification management, multi-tenancy, billing, white-label theming, and external API keys are not implemented and are not authorization to add scope. Follow the current task.

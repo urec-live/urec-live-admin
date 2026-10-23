@@ -3,10 +3,10 @@ const isLocalHost = typeof window !== 'undefined'
   : true;
 
 const localBackend = 'http://localhost:8080';
-const railwayBackend = 'https://urec-live-backend-production.up.railway.app';
+const productionBackend = 'https://urec-live-backend.onrender.com';
 
 export const environment = {
   production: false,
-  apiUrl: `${isLocalHost ? localBackend : railwayBackend}/api`,
-  wsUrl: `${isLocalHost ? localBackend : railwayBackend}/ws`
+  apiUrl: `${isLocalHost ? localBackend : productionBackend}/api`,
+  wsUrl: `${isLocalHost ? localBackend : productionBackend}/ws`
 };

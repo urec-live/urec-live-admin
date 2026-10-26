@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, LoginRequest } from '../models/auth.model';
+import { unreachableKind } from './backend-status.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -48,7 +49,8 @@ export class AuthService {
         }
       }),
       catchError(err => {
-        this.logout();
+        // If the server couldn't be asked, the refresh token may still be good: stay signed in
+        if (!unreachableKind(err)) this.logout();
         return throwError(() => err);
       })
     );

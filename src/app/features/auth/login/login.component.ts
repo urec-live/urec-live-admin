@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgIf } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { UNREACHABLE_COPY, unreachableKind } from '../../../core/services/backend-status.service';
 
 @Component({
   selector: 'app-login',
@@ -114,13 +115,15 @@ export class LoginComponent {
         // depending on your SecurityConfig. We treat all of them as
         // "invalid credentials" and show the inline error message.
         const status = err?.status;
-        
+        // No answer (network/CORS failure) or Railway's proxy saying the backend is down (502/503/504)
+        const unreachable = unreachableKind(err) ?? (status === undefined ? 'network' : null);
+
          if (status === 401 || status === 403 || status === 400) {
           // Bad credentials returned from backend
           this.errorMessage = 'Incorrect username or password. Please try again.';
-        } else if (status === 0 || status === undefined) {
-          // Network/CORS failure — backend unreachable
-          this.snackBar.open('Cannot reach the server. Please check your connection.', 'Dismiss', { duration: 4000 });
+        } else if (unreachable) {
+          // Same wording as the notice at the top of the page
+          this.snackBar.open(UNREACHABLE_COPY[unreachable].short, 'Dismiss', { duration: 4000 });
         } else {
           // Unexpected server error (500, etc.)
           this.snackBar.open('An unexpected error occurred. Please try again later.', 'Dismiss', { duration: 4000 });

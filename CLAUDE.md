@@ -64,11 +64,13 @@ src/
 │   │   │   ├── help-request.service.ts  # /api/admin/help-requests endpoints
 │   │   │   ├── help-request-store.service.ts # Polled help request queue + alerts (toast, chime, tab title)
 │   │   │   ├── chime.service.ts         # Web Audio "cabin call" chime, mute setting
+│   │   │   ├── backend-status.service.ts # Whether requests reach the backend; unreachableKind(), notice wording/timings
 │   │   │   └── websocket.service.ts     # RxStomp client, /topic/machines observable
 │   │   ├── guards/
 │   │   │   └── auth.guard.ts
 │   │   ├── interceptors/
-│   │   │   └── jwt.interceptor.ts       # Auto-attach Bearer token, handle 401 refresh
+│   │   │   ├── jwt.interceptor.ts       # Auto-attach Bearer token, handle 401 refresh
+│   │   │   └── backend-status.interceptor.ts # Reports every answer/failure to BackendStatusService
 │   │   └── models/
 │   │       ├── auth.model.ts
 │   │       ├── equipment.model.ts       # Equipment, CreateEquipmentRequest, EquipmentStatus
@@ -95,7 +97,8 @@ src/
 │   │   │   ├── topbar/
 │   │   │   ├── shell/                   # Main layout wrapper
 │   │   │   ├── qr-dialog/               # QR code display + download
-│   │   │   └── confirm-dialog/          # Reusable confirmation dialog
+│   │   │   ├── confirm-dialog/          # Reusable confirmation dialog
+│   │   │   └── backend-notice/          # "Can't reach UREC Live" card (in AppComponent, so every page)
 │   │   └── pipes/
 │   ├── app.routes.ts
 │   └── app.config.ts
@@ -165,7 +168,12 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 ### Auth
 - Login page with admin role validation (rejects non-ADMIN accounts)
 - JWT stored in localStorage, attached to all requests via interceptor
-- Auto-refresh on 401, redirect to login on refresh failure
+- Auto-refresh on 401, redirect to login on refresh failure. A refresh that can't reach the server (no answer, 502/503/504) keeps the admin signed in
+
+### Backend unreachable notice
+- `backendStatusInterceptor` (registered after `jwtInterceptor`, so the request, the refresh and the retry are each reported) tells `BackendStatusService` about every answer and failure. No answer (status 0, which includes CORS failures) or a 502/503/504 from Railway's proxy means unreachable; any other answer, error codes included, means reachable. Requests are numbered as they start, and a failure from one that started before a newer answer is ignored (not timed, so clock changes don't matter). Nothing extra is sent to check. The STOMP connection doesn't report.
+- `BackendUnreachableNoticeComponent` (in `AppComponent`, so the login page too) is a fixed card at the top, above Material dialogs (`z-[1100]`). It hides itself after 10 s; once it's gone (on its own, closed, or turned into "Connected again" for 3 s), failures don't bring it back for 30 s. **Try again** (`GET /api/auth/test`, as text, 10 s timeout) stops the 10 s while it checks, and a failed check shows "Still can't reach" for a fresh 10 s; closing the card cancels it. Wording and timings: `backend-status.service.ts`.
+- Use `unreachableKind(error)` for other messages about failed requests, with `UNREACHABLE_COPY[kind].short` for toasts, as the login page does.
 
 ### WebSocket
 - RxStomp service connects on dashboard init
@@ -228,7 +236,7 @@ npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
 - Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
 - Karma loads the app's global styles (Material theme + Tailwind), so layout bugs can be tested by measuring rendered elements (`getBoundingClientRect`, `scrollWidth`); see `shell-sidebar-layout.spec.ts`. Roboto isn't loaded in tests, but the fallback font measures within a pixel for the sidebar labels
 - Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
-- Testing guides: `EQUIPMENT_ISSUES_TESTING.md` and `HELP_REQUESTS_TESTING.md`
+- Testing guides: `EQUIPMENT_ISSUES_TESTING.md`, `HELP_REQUESTS_TESTING.md` and `BACKEND_UNREACHABLE_TESTING.md`
 
 ---
 

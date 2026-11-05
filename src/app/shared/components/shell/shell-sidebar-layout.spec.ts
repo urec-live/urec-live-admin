@@ -3,6 +3,7 @@ import { WritableSignal, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AuthService } from '../../../core/services/auth.service';
+import { ChatReportStore } from '../../../core/services/chat-report-store.service';
 import { EquipmentIssueService } from '../../../core/services/equipment-issue.service';
 import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
 import { HelpRequestStore } from '../../../core/services/help-request-store.service';
@@ -17,6 +18,7 @@ describe('ShellComponent sidebar layout', () => {
   let fixture: ComponentFixture<ShellComponent>;
   let summary: WritableSignal<EquipmentIssueSummary | null>;
   let needsStaffCount: WritableSignal<number>;
+  let reportedMessages: WritableSignal<number>;
 
   const awaitingReview = (reported: number): EquipmentIssueSummary => ({
     reported, acknowledged: 0, inProgress: 0, affectedMachines: reported > 0 ? 1 : 0, outOfOrderMachines: 0,
@@ -25,6 +27,7 @@ describe('ShellComponent sidebar layout', () => {
   beforeEach(async () => {
     summary = signal<EquipmentIssueSummary | null>(awaitingReview(0));
     needsStaffCount = signal(0);
+    reportedMessages = signal(0);
 
     await TestBed.configureTestingModule({
       imports: [ShellComponent],
@@ -32,6 +35,10 @@ describe('ShellComponent sidebar layout', () => {
         provideRouter([]),
         provideNoopAnimations(),
         { provide: EquipmentIssueStore, useValue: jasmine.createSpyObj('EquipmentIssueStore', ['start', 'stop']) },
+        {
+          provide: ChatReportStore,
+          useValue: jasmine.createSpyObj('ChatReportStore', ['start', 'stop'], { openMessages: reportedMessages }),
+        },
         {
           provide: HelpRequestStore,
           useValue: jasmine.createSpyObj('HelpRequestStore', ['start', 'stop'], { needsStaffCount }),
@@ -114,6 +121,21 @@ describe('ShellComponent sidebar layout', () => {
       expect(label('Help Requests').scrollWidth)
         .withContext(`label cut off next to a badge of ${waiting}`)
         .toBeLessThanOrEqual(label('Help Requests').clientWidth);
+    }
+  });
+
+  it('shows "Chat Reports" in full next to its badge, without widening the sidebar', async () => {
+    const width = sidebar().width;
+    for (const reported of [1, 12, 123]) {
+      reportedMessages.set(reported);
+      await settle();
+
+      const chatBadge = el().querySelector('[data-testid="chat-reports-badge"]');
+      expect(chatBadge?.textContent?.trim()).toBe(String(reported));
+      expect(label('Chat Reports').scrollWidth)
+        .withContext(`label cut off next to a badge of ${reported}`)
+        .toBeLessThanOrEqual(label('Chat Reports').clientWidth);
+      expect(sidebar().width).toBe(width);
     }
   });
 });

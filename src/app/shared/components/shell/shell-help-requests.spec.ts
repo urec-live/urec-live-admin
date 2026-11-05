@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { ChatReportStore } from '../../../core/services/chat-report-store.service';
 import { HelpRequestStore } from '../../../core/services/help-request-store.service';
 import { ShellComponent } from './shell.component';
 
@@ -23,6 +24,10 @@ describe('ShellComponent help requests', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: HelpRequestStore, useValue: store },
+        {
+          provide: ChatReportStore,
+          useValue: jasmine.createSpyObj('ChatReportStore', ['start', 'stop'], { openMessages: signal(0) }),
+        },
       ],
     }).compileComponents();
   });

@@ -129,6 +129,20 @@ import {
               <div class="rounded-lg bg-gray-50 border border-gray-200 p-3 mb-3" data-testid="message">
                 @if (!group.messageAvailable) {
                   <p class="text-sm text-gray-500">This message no longer exists.</p>
+                } @else if (group.kind === 'IMAGE') {
+                  <!-- A photo: staff need its caption too, and a closer look -->
+                  @if (group.media) {
+                    <a [href]="group.media.url" target="_blank" rel="noopener noreferrer"
+                       title="Open the full photo" data-testid="photo-link">
+                      <img [src]="group.media.url" [alt]="'Photo from ' + group.senderUsername"
+                           class="max-h-64 max-w-full rounded" data-testid="message-media" />
+                    </a>
+                  } @else {
+                    <p class="text-sm text-gray-500" data-testid="photo-unavailable">Photo unavailable</p>
+                  }
+                  @if (group.content) {
+                    <p class="mt-2 text-gray-800 whitespace-pre-line break-words" data-testid="message-caption">{{ group.content }}</p>
+                  }
                 } @else if (group.media && group.kind !== 'TEXT') {
                   <img [src]="group.media.url"
                        [alt]="(group.kind === 'STICKER' ? 'Sticker' : 'GIF') + ' from ' + group.senderUsername"

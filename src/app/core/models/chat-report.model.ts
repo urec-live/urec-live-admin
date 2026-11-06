@@ -6,7 +6,8 @@ export type ChatReportReason = 'SPAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'OTHER'
 /** OPEN until staff dismiss it (message stays up) or action it (message removed). */
 export type ChatReportStatus = 'OPEN' | 'DISMISSED' | 'ACTIONED';
 
-export type ChatMessageKind = 'TEXT' | 'GIF' | 'STICKER';
+/** IMAGE is a photo a member uploaded; its content is the caption (possibly empty). */
+export type ChatMessageKind = 'TEXT' | 'GIF' | 'STICKER' | 'IMAGE';
 
 export const CHAT_REPORT_REASON_LABELS: Record<ChatReportReason, string> = {
   SPAM: 'Spam',
@@ -37,10 +38,13 @@ export interface ChatReport {
 }
 
 export interface ChatReportMedia {
+  /** For photos, a link that expires (2 hours by default); reload the queue for a fresh one. */
   url: string;
   previewUrl: string | null;
   width: number | null;
   height: number | null;
+  /** Photos only. */
+  mediaId?: number | null;
 }
 
 /** A reported message with all its reports. Content is shown even if the sender has deleted it. */

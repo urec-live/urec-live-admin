@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
+import { ChatReportStore } from '../../../core/services/chat-report-store.service';
 import { EquipmentIssueStore } from '../../../core/services/equipment-issue-store.service';
 import { HelpRequestStore } from '../../../core/services/help-request-store.service';
 
@@ -15,7 +16,7 @@ import { HelpRequestStore } from '../../../core/services/help-request-store.serv
       <!-- The ! matters: Material's own width rule (auto in this theme) loads after Tailwind, and an auto-width
            sidebar grows when a badge appears and covers the page. 18rem fits the badged labels. -->
       <mat-sidenav #sidenav mode="side" [opened]="sidenavOpen" class="!w-72" fixedInViewport>
-        <app-sidebar [helpBadge]="helpRequests.needsStaffCount()" />
+        <app-sidebar [helpBadge]="helpRequests.needsStaffCount()" [chatReportsBadge]="chatReports.openMessages()" />
       </mat-sidenav>
 
       <mat-sidenav-content class="flex flex-col h-full bg-gray-50">
@@ -32,16 +33,20 @@ export class ShellComponent implements OnInit, OnDestroy {
   readonly helpRequests = inject(HelpRequestStore);
   /** Watches for new equipment issue reports on every page of the signed-in dashboard. */
   readonly equipmentIssues = inject(EquipmentIssueStore);
+  /** Keeps the reported chat messages badge current on every page. */
+  readonly chatReports = inject(ChatReportStore);
 
   sidenavOpen = true;
 
   ngOnInit(): void {
     this.helpRequests.start();
     this.equipmentIssues.start();
+    this.chatReports.start();
   }
 
   ngOnDestroy(): void {
     this.helpRequests.stop();
     this.equipmentIssues.stop();
+    this.chatReports.stop();
   }
 }

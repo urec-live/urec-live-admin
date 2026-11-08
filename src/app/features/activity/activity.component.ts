@@ -31,7 +31,8 @@ const EVENT_TYPES = ['CHECK_IN', 'CHECK_OUT', 'SESSION_SAVED', 'REGISTRATION',
                      'ADMIN_CREATE_USER', 'ADMIN_UPDATE_ROLES', 'ADMIN_DELETE_USER',
                      'ISSUE_REPORTED', 'ISSUE_STATUS_CHANGED', 'ISSUE_WITHDRAWN',
                      'EQUIPMENT_OUT_OF_ORDER', 'EQUIPMENT_BACK_IN_SERVICE',
-                     'HELP_REQUESTED', 'HELP_STATUS_CHANGED', 'HELP_CLOSED'];
+                     'HELP_REQUESTED', 'HELP_STATUS_CHANGED', 'HELP_CLOSED',
+                     'CHAT_MESSAGE_REPORTED', 'CHAT_REPORT_DISMISSED', 'CHAT_MESSAGE_REMOVED'];
 
 const DATE_PRESETS = [
   { label: 'Today',      value: 'today' },
@@ -427,6 +428,9 @@ export class ActivityComponent implements OnInit, OnDestroy {
       HELP_REQUESTED:    'Help Requested',
       HELP_STATUS_CHANGED: 'Help Response',
       HELP_CLOSED:       'Help Closed',
+      CHAT_MESSAGE_REPORTED: 'Message Reported',
+      CHAT_REPORT_DISMISSED: 'Report Dismissed',
+      CHAT_MESSAGE_REMOVED:  'Message Removed',
     };
     return map[et] ?? et;
   }
@@ -448,6 +452,9 @@ export class ActivityComponent implements OnInit, OnDestroy {
       case 'HELP_REQUESTED':    return 'bg-yellow-100 text-yellow-800';
       case 'HELP_STATUS_CHANGED': return 'bg-lime-100 text-lime-800';
       case 'HELP_CLOSED':       return 'bg-cyan-100 text-cyan-700';
+      case 'CHAT_MESSAGE_REPORTED': return 'bg-red-50 text-red-600';
+      case 'CHAT_REPORT_DISMISSED': return 'bg-slate-100 text-slate-700';
+      case 'CHAT_MESSAGE_REMOVED':  return 'bg-red-100 text-red-700';
       default:                  return 'bg-gray-100 text-gray-600';
     }
   }

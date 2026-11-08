@@ -49,6 +49,14 @@ interface NavItem {
                 {{ awaitingReview() }}
               </span>
             }
+            @if (item.route === chatReportsRoute && chatReportsBadge > 0) {
+              <span matListItemMeta
+                    class="!self-center !ml-2 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-semibold flex items-center justify-center"
+                    data-testid="chat-reports-badge"
+                    [attr.aria-label]="chatReportsBadge + (chatReportsBadge === 1 ? ' reported message' : ' reported messages') + ' awaiting review'">
+                {{ chatReportsBadge }}
+              </span>
+            }
           </a>
         }
       </mat-nav-list>
@@ -65,9 +73,12 @@ export class SidebarComponent {
 
   /** Members waiting for staff (new + "Too busy"), from the shell's HelpRequestStore. */
   @Input() helpBadge = 0;
+  /** Chat messages with open reports, from the shell's ChatReportStore. */
+  @Input() chatReportsBadge = 0;
 
   readonly helpRoute = '/help-requests';
   readonly issuesRoute = '/equipment-issues';
+  readonly chatReportsRoute = '/chat-reports';
 
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
@@ -75,6 +86,7 @@ export class SidebarComponent {
     // { label: 'Live Monitor', icon: 'monitor_heart', route: '/live-monitor' },
     { label: 'Equipment', icon: 'fitness_center', route: '/equipment' },
     { label: 'Equipment Issues', icon: 'report_problem', route: this.issuesRoute },
+    { label: 'Chat Reports', icon: 'flag', route: this.chatReportsRoute },
     { label: 'Floor Map', icon: 'layers', route: '/floor-map' },
     { label: 'Exercises', icon: 'directions_run', route: '/exercises' },
     { label: 'Users', icon: 'group', route: '/users' },

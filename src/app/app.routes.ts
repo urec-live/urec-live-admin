@@ -5,66 +5,94 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () =>
-      import('./features/auth/login/login.component').then(m => m.LoginComponent)
+      import('./features/auth/login/login.component').then(
+        (m) => m.LoginComponent,
+      ),
   },
   {
     path: '',
     loadComponent: () =>
-      import('./shared/components/shell/shell.component').then(m => m.ShellComponent),
+      import('./shared/components/shell/shell.component').then(
+        (m) => m.ShellComponent,
+      ),
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/dashboard-home/dashboard-home.component').then(m => m.DashboardHomeComponent)
+          import(
+            './features/dashboard/dashboard-home/dashboard-home.component'
+          ).then((m) => m.DashboardHomeComponent),
       },
       {
         path: 'help-requests',
         loadComponent: () =>
-          import('./features/help-requests/help-requests.component').then(m => m.HelpRequestsComponent)
+          import('./features/help-requests/help-requests.component').then(
+            (m) => m.HelpRequestsComponent,
+          ),
       },
       {
         path: 'equipment',
         loadComponent: () =>
-          import('./features/equipment/equipment-list/equipment-list.component').then(m => m.EquipmentListComponent)
+          import(
+            './features/equipment/equipment-list/equipment-list.component'
+          ).then((m) => m.EquipmentListComponent),
       },
       {
         path: 'equipment-issues',
         loadComponent: () =>
-          import('./features/equipment-issues/equipment-issues.component').then(m => m.EquipmentIssuesComponent)
+          import('./features/equipment-issues/equipment-issues.component').then(
+            (m) => m.EquipmentIssuesComponent,
+          ),
       },
       {
         path: 'chat-reports',
         loadComponent: () =>
-          import('./features/chat-reports/chat-reports.component').then(m => m.ChatReportsComponent)
+          import('./features/chat-reports/chat-reports.component').then(
+            (m) => m.ChatReportsComponent,
+          ),
       },
       {
         path: 'exercises',
         loadComponent: () =>
-          import('./features/exercises/exercises.component').then(m => m.ExercisesComponent)
+          import('./features/exercises/exercises.component').then(
+            (m) => m.ExercisesComponent,
+          ),
       },
       {
         path: 'users',
         loadComponent: () =>
-          import('./features/users/users.component').then(m => m.UsersComponent)
+          import('./features/users/users.component').then(
+            (m) => m.UsersComponent,
+          ),
       },
       {
         path: 'activity',
         loadComponent: () =>
-          import('./features/activity/activity.component').then(m => m.ActivityComponent)
+          import('./features/activity/activity.component').then(
+            (m) => m.ActivityComponent,
+          ),
       },
       {
         path: 'live-monitor',
         loadComponent: () =>
-          import('./features/dashboard/live-monitor/live-monitor.component').then(m => m.LiveMonitorComponent)
+          import(
+            './features/dashboard/live-monitor/live-monitor.component'
+          ).then((m) => m.LiveMonitorComponent),
       },
       {
         path: 'floor-map',
+        canDeactivate: [
+          (component: { canDeactivate: () => boolean | import("rxjs").Observable<boolean> }) =>
+            component.canDeactivate(),
+        ],
         loadComponent: () =>
-          import('./features/floor-map/floor-map-editor.component').then(m => m.FloorMapEditorComponent)
-      }
-    ]
+          import('./features/floor-map/floor-map-editor.component').then(
+            (m) => m.FloorMapEditorComponent,
+          ),
+      },
+    ],
   },
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'login' },
 ];

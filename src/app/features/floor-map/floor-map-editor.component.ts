@@ -1,5 +1,11 @@
 import {
+  FloorLayoutEditorComponent,
+  AREA_COLORS,
+} from './floor-layout-editor.component';
+import { Observable } from 'rxjs';
+import {
   Component,
+  HostListener,
   inject,
   OnInit,
   DestroyRef,
@@ -51,6 +57,7 @@ interface CanvasEquipment extends FloorPlanEquipment {
   standalone: true,
   imports: [
     CommonModule,
+    FloorLayoutEditorComponent,
     FormsModule,
     MatButtonModule,
     MatIconModule,
@@ -69,13 +76,23 @@ interface CanvasEquipment extends FloorPlanEquipment {
   template: `
     <div class="flex flex-col h-full">
       <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+      <div
+        class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white"
+      >
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Floor Map Editor</h1>
-          <p class="text-sm text-gray-500 mt-1">Drag equipment onto each floor to set positions</p>
+          <p class="text-sm text-gray-500 mt-1">
+            Edit rooms and places, then position equipment on the same floor
+            plan
+          </p>
         </div>
         <div class="flex items-center gap-3">
-          <button mat-flat-button color="primary" (click)="addFloor()" class="!rounded-lg">
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="addFloor()"
+            class="!rounded-lg"
+          >
             <mat-icon>add</mat-icon>
             Add Floor
           </button>
@@ -91,7 +108,10 @@ interface CanvasEquipment extends FloorPlanEquipment {
           <!-- Floor tabs (left sidebar) -->
           <div class="w-56 border-r border-gray-200 bg-gray-50 flex flex-col">
             <div class="p-3 border-b border-gray-200">
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Floors</span>
+              <span
+                class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                >Floors</span
+              >
             </div>
             <div class="flex-1 overflow-y-auto p-2 space-y-1">
               @for (floor of floors(); track floor.id) {
@@ -105,24 +125,37 @@ interface CanvasEquipment extends FloorPlanEquipment {
                   <div>
                     <div class="font-medium text-sm">{{ floor.name }}</div>
                     <div class="text-xs text-gray-500">
-                      {{ floor.equipment.length }} equipment · Floor {{ floor.floorNumber }}
+                      {{ floor.equipment.length }} equipment · Floor
+                      {{ floor.floorNumber }}
                     </div>
                   </div>
-                  <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button mat-icon-button class="!w-7 !h-7" (click)="editFloor(floor, $event)"
-                            matTooltip="Edit floor">
+                  <div
+                    class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <button
+                      mat-icon-button
+                      class="!w-7 !h-7"
+                      (click)="editFloor(floor, $event)"
+                      matTooltip="Edit floor"
+                    >
                       <mat-icon class="!text-base">edit</mat-icon>
                     </button>
-                    <button mat-icon-button class="!w-7 !h-7" (click)="deleteFloor(floor, $event)"
-                            matTooltip="Delete floor">
-                      <mat-icon class="!text-base text-red-500">delete</mat-icon>
+                    <button
+                      mat-icon-button
+                      class="!w-7 !h-7"
+                      (click)="deleteFloor(floor, $event)"
+                      matTooltip="Delete floor"
+                    >
+                      <mat-icon class="!text-base text-red-500"
+                        >delete</mat-icon
+                      >
                     </button>
                   </div>
                 </button>
               }
               @if (floors().length === 0) {
                 <div class="text-center py-8 text-gray-400 text-sm">
-                  No floors yet.<br>Click "Add Floor" to start.
+                  No floors yet.<br />Click "Add Floor" to start.
                 </div>
               }
             </div>
@@ -132,7 +165,9 @@ interface CanvasEquipment extends FloorPlanEquipment {
           <div class="flex-1 flex flex-col overflow-hidden">
             @if (selectedFloor()) {
               <!-- Toolbar -->
-              <div class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
+              <div
+                class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200"
+              >
                 <div class="flex items-center gap-4">
                   <span class="text-sm font-semibold text-gray-700">
                     {{ selectedFloor()!.name }}
@@ -143,11 +178,17 @@ interface CanvasEquipment extends FloorPlanEquipment {
                 </div>
                 <div class="flex items-center gap-2">
                   @if (hasUnsavedChanges()) {
-                    <span class="text-xs text-amber-600 font-medium mr-2">● Unsaved changes</span>
+                    <span class="text-xs text-amber-600 font-medium mr-2"
+                      >● Unsaved changes</span
+                    >
                   }
-                  <button mat-flat-button color="primary" (click)="savePositions()"
-                          [disabled]="!hasUnsavedChanges() || saving()"
-                          class="!rounded-lg !text-sm">
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    (click)="savePositions()"
+                    [disabled]="!hasUnsavedChanges() || saving()"
+                    class="!rounded-lg !text-sm"
+                  >
                     @if (saving()) {
                       <mat-spinner diameter="18" class="mr-2"></mat-spinner>
                     }
@@ -157,9 +198,38 @@ interface CanvasEquipment extends FloorPlanEquipment {
                 </div>
               </div>
 
-              <div class="flex-1 flex overflow-hidden">
+              <div class="flex gap-2 px-4 py-2 border-b bg-white">
+                <button
+                  mat-button
+                  (click)="setMode('equipment')"
+                  [class.bg-green-100]="mode === 'equipment'"
+                >
+                  Equipment positions
+                </button>
+                <button
+                  mat-button
+                  (click)="setMode('areas')"
+                  [class.bg-green-100]="mode === 'areas'"
+                >
+                  Rooms & places
+                </button>
+              </div>
+              @if (mode === 'areas') {
+                <app-floor-layout-editor
+                  [floor]="selectedFloor()!"
+                  (dirtyChange)="layoutDirty.set($event)"
+                  (saved)="layoutSaved($event)"
+                />
+              }
+              <div
+                class="flex-1 flex overflow-hidden"
+                [class.hidden]="mode === 'areas'"
+              >
                 <!-- Canvas -->
-                <div class="flex-1 overflow-auto bg-gray-100 p-4" #canvasContainer>
+                <div
+                  class="flex-1 overflow-auto bg-gray-100 p-4"
+                  #canvasContainer
+                >
                   <div
                     class="relative bg-white border-2 border-dashed border-gray-300 rounded-xl mx-auto"
                     [style.width.px]="selectedFloor()!.width"
@@ -168,15 +238,70 @@ interface CanvasEquipment extends FloorPlanEquipment {
                     (drop)="onCanvasDrop($event)"
                     (dragover)="onCanvasDragOver($event)"
                   >
+                    <svg
+                      class="absolute inset-0 pointer-events-none"
+                      [attr.width]="selectedFloor()!.width"
+                      [attr.height]="selectedFloor()!.height"
+                    >
+                      @for (
+                        area of selectedFloor()!.layout?.areas;
+                        track area.id
+                      ) {
+                        @if (area.shape === 'rect') {
+                          <rect
+                            [attr.x]="area.x"
+                            [attr.y]="area.y"
+                            [attr.width]="area.width"
+                            [attr.height]="area.height"
+                            [attr.fill]="areaColors[area.kind]"
+                            stroke="#C5D0CA"
+                            stroke-width="2"
+                            rx="8"
+                          />
+                          <text
+                            [attr.x]="area.x! + area.width! / 2"
+                            [attr.y]="area.y! + 26"
+                            text-anchor="middle"
+                            fill="#4A5D53"
+                            font-size="18"
+                          >
+                            {{ area.name }}
+                          </text>
+                        } @else {
+                          <polygon
+                            [attr.points]="polygonPoints(area)"
+                            [attr.fill]="areaColors[area.kind]"
+                            stroke="#C5D0CA"
+                            stroke-width="2"
+                          />
+                        }
+                      }
+                    </svg>
                     <!-- Grid lines -->
-                    <svg class="absolute inset-0 pointer-events-none" [attr.width]="selectedFloor()!.width" [attr.height]="selectedFloor()!.height">
+                    <svg
+                      class="absolute inset-0 pointer-events-none"
+                      [attr.width]="selectedFloor()!.width"
+                      [attr.height]="selectedFloor()!.height"
+                    >
                       @for (i of gridLinesV(); track i) {
-                        <line [attr.x1]="i" y1="0" [attr.x2]="i" [attr.y2]="selectedFloor()!.height"
-                              stroke="#f0f0f0" stroke-width="0.5"/>
+                        <line
+                          [attr.x1]="i"
+                          y1="0"
+                          [attr.x2]="i"
+                          [attr.y2]="selectedFloor()!.height"
+                          stroke="#f0f0f0"
+                          stroke-width="0.5"
+                        />
                       }
                       @for (i of gridLinesH(); track i) {
-                        <line x1="0" [attr.y1]="i" [attr.x2]="selectedFloor()!.width" [attr.y2]="i"
-                              stroke="#f0f0f0" stroke-width="0.5"/>
+                        <line
+                          x1="0"
+                          [attr.y1]="i"
+                          [attr.x2]="selectedFloor()!.width"
+                          [attr.y2]="i"
+                          stroke="#f0f0f0"
+                          stroke-width="0.5"
+                        />
                       }
                     </svg>
 
@@ -198,11 +323,15 @@ interface CanvasEquipment extends FloorPlanEquipment {
                             [class.ring-2]="eq.isDirty"
                             [class.ring-amber-400]="eq.isDirty"
                           >
-                            <mat-icon class="!text-base">fitness_center</mat-icon>
+                            <mat-icon class="!text-base"
+                              >fitness_center</mat-icon
+                            >
                           </div>
-                          <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap
+                          <div
+                            class="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap
                                       bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded
-                                      opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                      opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                          >
                             {{ eq.name }}
                           </div>
                           <!-- Remove from floor button -->
@@ -220,10 +349,17 @@ interface CanvasEquipment extends FloorPlanEquipment {
 
                     <!-- Drop zone hint -->
                     @if (canvasEquipment().length === 0) {
-                      <div class="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                      <div
+                        class="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none"
+                      >
                         <div class="text-center">
-                          <mat-icon class="!text-5xl !w-12 !h-12 mb-2">drag_indicator</mat-icon>
-                          <p class="text-sm">Drag equipment from the sidebar<br>to place them on this floor</p>
+                          <mat-icon class="!text-5xl !w-12 !h-12 mb-2"
+                            >drag_indicator</mat-icon
+                          >
+                          <p class="text-sm">
+                            Drag equipment from the sidebar<br />to place them
+                            on this floor
+                          </p>
                         </div>
                       </div>
                     }
@@ -231,12 +367,18 @@ interface CanvasEquipment extends FloorPlanEquipment {
                 </div>
 
                 <!-- Equipment sidebar (right) -->
-                <div class="w-64 border-l border-gray-200 bg-white flex flex-col">
+                <div
+                  class="w-64 border-l border-gray-200 bg-white flex flex-col"
+                >
                   <div class="p-3 border-b border-gray-200">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <span
+                      class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                    >
                       Unassigned Equipment
                     </span>
-                    <span class="text-xs text-gray-400 ml-1">({{ unassignedEquipment().length }})</span>
+                    <span class="text-xs text-gray-400 ml-1"
+                      >({{ unassignedEquipment().length }})</span
+                    >
                   </div>
                   <div class="flex-1 overflow-y-auto p-2 space-y-1">
                     @for (eq of unassignedEquipment(); track eq.id) {
@@ -255,8 +397,14 @@ interface CanvasEquipment extends FloorPlanEquipment {
                           <mat-icon class="!text-xs">fitness_center</mat-icon>
                         </div>
                         <div class="flex-1 min-w-0">
-                          <div class="text-sm font-medium text-gray-800 truncate">{{ eq.name }}</div>
-                          <div class="text-[10px] text-gray-400">{{ eq.code }}</div>
+                          <div
+                            class="text-sm font-medium text-gray-800 truncate"
+                          >
+                            {{ eq.name }}
+                          </div>
+                          <div class="text-[10px] text-gray-400">
+                            {{ eq.code }}
+                          </div>
                         </div>
                       </div>
                     }
@@ -269,11 +417,19 @@ interface CanvasEquipment extends FloorPlanEquipment {
                 </div>
               </div>
             } @else {
-              <div class="flex-1 flex items-center justify-center text-gray-400">
+              <div
+                class="flex-1 flex items-center justify-center text-gray-400"
+              >
                 <div class="text-center">
-                  <mat-icon class="!text-6xl !w-16 !h-16 mb-3 text-gray-300">layers</mat-icon>
-                  <p class="text-lg font-medium text-gray-500">Select a floor to edit</p>
-                  <p class="text-sm mt-1">Or create a new floor to get started</p>
+                  <mat-icon class="!text-6xl !w-16 !h-16 mb-3 text-gray-300"
+                    >layers</mat-icon
+                  >
+                  <p class="text-lg font-medium text-gray-500">
+                    Select a floor to edit
+                  </p>
+                  <p class="text-sm mt-1">
+                    Or create a new floor to get started
+                  </p>
                 </div>
               </div>
             }
@@ -284,36 +440,66 @@ interface CanvasEquipment extends FloorPlanEquipment {
 
     <!-- Inline edit dialog overlay -->
     @if (editingFloor()) {
-      <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
-           (click)="cancelEditFloor()">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-96" (click)="$event.stopPropagation()">
+      <div
+        class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
+        (click)="cancelEditFloor()"
+      >
+        <div
+          class="bg-white rounded-xl shadow-2xl p-6 w-96"
+          (click)="$event.stopPropagation()"
+        >
           <h2 class="text-lg font-bold text-gray-900 mb-4">
             {{ editingFloor()!.id ? 'Edit Floor' : 'New Floor' }}
           </h2>
           <div class="space-y-4">
             <mat-form-field class="w-full" appearance="outline">
               <mat-label>Floor Name</mat-label>
-              <input matInput [(ngModel)]="editForm.name" placeholder="e.g. Ground Floor">
+              <input
+                matInput
+                [(ngModel)]="editForm.name"
+                placeholder="e.g. Ground Floor"
+              />
             </mat-form-field>
             <mat-form-field class="w-full" appearance="outline">
               <mat-label>Floor Number</mat-label>
-              <input matInput type="number" [(ngModel)]="editForm.floorNumber" min="1">
+              <input
+                matInput
+                type="number"
+                [(ngModel)]="editForm.floorNumber"
+                min="1"
+              />
             </mat-form-field>
             <div class="flex gap-3">
               <mat-form-field class="flex-1" appearance="outline">
                 <mat-label>Width (px)</mat-label>
-                <input matInput type="number" [(ngModel)]="editForm.width" min="400" max="2000">
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="editForm.width"
+                  min="400"
+                  max="2000"
+                />
               </mat-form-field>
               <mat-form-field class="flex-1" appearance="outline">
                 <mat-label>Height (px)</mat-label>
-                <input matInput type="number" [(ngModel)]="editForm.height" min="300" max="1500">
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="editForm.height"
+                  min="300"
+                  max="1500"
+                />
               </mat-form-field>
             </div>
           </div>
           <div class="flex justify-end gap-3 mt-6">
             <button mat-button (click)="cancelEditFloor()">Cancel</button>
-            <button mat-flat-button color="primary" (click)="saveFloor()"
-                    [disabled]="!editForm.name">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="saveFloor()"
+              [disabled]="!editForm.name"
+            >
               {{ editingFloor()!.id ? 'Update' : 'Create' }}
             </button>
           </div>
@@ -323,6 +509,55 @@ interface CanvasEquipment extends FloorPlanEquipment {
   `,
 })
 export class FloorMapEditorComponent implements OnInit {
+  mode: 'areas' | 'equipment' = 'equipment';
+  areaColors = AREA_COLORS;
+  layoutDirty = signal(false);
+  polygonPoints(area: import('../../core/models/floor-plan.model').FloorArea) {
+    return area.points?.map((p) => `${p.x},${p.y}`).join(' ');
+  }
+  layoutSaved(floor: FloorPlan) {
+    this.selectedFloor.set(floor);
+    this.floors.update((list) =>
+      list.map((f) => (f.id === floor.id ? floor : f)),
+    );
+    this.layoutDirty.set(false);
+  }
+  setMode(mode: 'areas' | 'equipment') {
+    if (this.mode === mode) return;
+    if (this.layoutDirty()) {
+      this.confirmDiscard().subscribe((ok) => {
+        if (ok) {
+          this.layoutDirty.set(false);
+          this.mode = mode;
+        }
+      });
+    } else this.mode = mode;
+  }
+  private confirmDiscard(): Observable<boolean> {
+    return this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Discard unsaved changes?',
+          message: 'Changes on this floor have not been saved.',
+          confirmText: 'Discard changes',
+          confirmColor: 'warn',
+        } as ConfirmDialogData,
+      })
+      .afterClosed();
+  }
+  canDeactivate(): boolean | Observable<boolean> {
+    return this.hasUnsavedChanges() || this.layoutDirty()
+      ? this.confirmDiscard()
+      : true;
+  }
+  @HostListener('window:beforeunload', ['$event']) beforeUnload(
+    event: BeforeUnloadEvent,
+  ) {
+    if (this.hasUnsavedChanges() || this.layoutDirty()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
   private floorPlanService = inject(FloorPlanService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
@@ -380,13 +615,17 @@ export class FloorMapEditorComponent implements OnInit {
           if (floors.length > 0 && !this.selectedFloor()) {
             this.selectFloor(floors[0]);
           } else if (this.selectedFloor()) {
-            const updated = floors.find((f) => f.id === this.selectedFloor()!.id);
+            const updated = floors.find(
+              (f) => f.id === this.selectedFloor()!.id,
+            );
             if (updated) this.selectFloor(updated);
           }
           this.loadUnassigned();
         },
         error: () => {
-          this.snackBar.open('Failed to load floor plans', 'Close', { duration: 3000 });
+          this.snackBar.open('Failed to load floor plans', 'Close', {
+            duration: 3000,
+          });
           this.loading.set(false);
         },
       });
@@ -408,6 +647,19 @@ export class FloorMapEditorComponent implements OnInit {
   }
 
   selectFloor(floor: FloorPlan) {
+    if (
+      floor.id !== this.selectedFloor()?.id &&
+      (this.hasUnsavedChanges() || this.layoutDirty())
+    ) {
+      this.confirmDiscard().subscribe((ok) => {
+        if (ok) this.applyFloor(floor);
+      });
+      return;
+    }
+    this.applyFloor(floor);
+  }
+  private applyFloor(floor: FloorPlan) {
+    this.layoutDirty.set(false);
     this.selectedFloor.set(floor);
     this.canvasEquipment.set(
       floor.equipment.map((eq) => ({
@@ -415,12 +667,17 @@ export class FloorMapEditorComponent implements OnInit {
         canvasX: eq.floorX ?? floor.width / 2,
         canvasY: eq.floorY ?? floor.height / 2,
         isDirty: false,
-      }))
+      })),
     );
   }
 
   addFloor() {
-    this.editForm = { name: '', floorNumber: this.floors().length + 1, width: 800, height: 600 };
+    this.editForm = {
+      name: '',
+      floorNumber: this.floors().length + 1,
+      width: 800,
+      height: 600,
+    };
     this.editingFloor.set({ id: 0 } as any);
   }
 
@@ -460,7 +717,10 @@ export class FloorMapEditorComponent implements OnInit {
             this.editingFloor.set(null);
             this.loadData();
           },
-          error: () => this.snackBar.open('Failed to update floor', 'Close', { duration: 3000 }),
+          error: () =>
+            this.snackBar.open('Failed to update floor', 'Close', {
+              duration: 3000,
+            }),
         });
     } else {
       this.floorPlanService
@@ -474,7 +734,10 @@ export class FloorMapEditorComponent implements OnInit {
             // Auto-select the new floor
             setTimeout(() => this.selectFloor(created), 100);
           },
-          error: () => this.snackBar.open('Failed to create floor', 'Close', { duration: 3000 }),
+          error: () =>
+            this.snackBar.open('Failed to create floor', 'Close', {
+              duration: 3000,
+            }),
         });
     }
   }
@@ -504,7 +767,9 @@ export class FloorMapEditorComponent implements OnInit {
               this.loadData();
             },
             error: () =>
-              this.snackBar.open('Failed to delete floor', 'Close', { duration: 3000 }),
+              this.snackBar.open('Failed to delete floor', 'Close', {
+                duration: 3000,
+              }),
           });
       }
     });
@@ -542,7 +807,9 @@ export class FloorMapEditorComponent implements OnInit {
     };
 
     this.canvasEquipment.update((list) => [...list, newCanvasEq]);
-    this.unassignedEquipment.update((list) => list.filter((e) => e.id !== eq.id));
+    this.unassignedEquipment.update((list) =>
+      list.filter((e) => e.id !== eq.id),
+    );
     this.draggingEquipment = null;
   }
 
@@ -568,8 +835,8 @@ export class FloorMapEditorComponent implements OnInit {
         list.map((item) =>
           item.id === this.activeDragEq!.id
             ? { ...item, canvasX: clampedX, canvasY: clampedY, isDirty: true }
-            : item
-        )
+            : item,
+        ),
       );
     };
 
@@ -622,14 +889,16 @@ export class FloorMapEditorComponent implements OnInit {
           this.snackBar.open('Positions saved!', 'Close', { duration: 2000 });
           // Mark all as clean
           this.canvasEquipment.update((list) =>
-            list.map((eq) => ({ ...eq, isDirty: false }))
+            list.map((eq) => ({ ...eq, isDirty: false })),
           );
           // Refresh floors list
           this.loadData();
         },
         error: () => {
           this.saving.set(false);
-          this.snackBar.open('Failed to save positions', 'Close', { duration: 3000 });
+          this.snackBar.open('Failed to save positions', 'Close', {
+            duration: 3000,
+          });
         },
       });
   }

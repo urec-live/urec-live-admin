@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   FloorPlan,
+  FloorLayout,
   FloorPlanEquipment,
   CreateFloorPlanRequest,
   EquipmentPosition,
@@ -19,14 +20,19 @@ export class FloorPlanService {
   }
 
   getUnassignedEquipment(): Observable<FloorPlanEquipment[]> {
-    return this.http.get<FloorPlanEquipment[]>(`${this.base}/unassigned-equipment`);
+    return this.http.get<FloorPlanEquipment[]>(
+      `${this.base}/unassigned-equipment`,
+    );
   }
 
   create(req: CreateFloorPlanRequest): Observable<FloorPlan> {
     return this.http.post<FloorPlan>(this.base, req);
   }
 
-  update(id: number, body: Partial<CreateFloorPlanRequest>): Observable<FloorPlan> {
+  update(
+    id: number,
+    body: Partial<CreateFloorPlanRequest>,
+  ): Observable<FloorPlan> {
     return this.http.put<FloorPlan>(`${this.base}/${id}`, body);
   }
 
@@ -34,11 +40,26 @@ export class FloorPlanService {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
 
-  updateEquipmentPositions(floorId: number, positions: EquipmentPosition[]): Observable<FloorPlan> {
-    return this.http.put<FloorPlan>(`${this.base}/${floorId}/equipment`, positions);
+  updateEquipmentPositions(
+    floorId: number,
+    positions: EquipmentPosition[],
+  ): Observable<FloorPlan> {
+    return this.http.put<FloorPlan>(
+      `${this.base}/${floorId}/equipment`,
+      positions,
+    );
   }
 
-  removeEquipmentFromFloor(floorId: number, equipmentId: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${floorId}/equipment/${equipmentId}`);
+  updateLayout(floorId: number, layout: FloorLayout): Observable<FloorPlan> {
+    return this.http.put<FloorPlan>(`${this.base}/${floorId}/layout`, layout);
+  }
+
+  removeEquipmentFromFloor(
+    floorId: number,
+    equipmentId: number,
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.base}/${floorId}/equipment/${equipmentId}`,
+    );
   }
 }

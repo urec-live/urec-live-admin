@@ -1,3 +1,18 @@
+export interface FloorArea {
+  id: string;
+  name: string;
+  kind: string;
+  shape: 'rect' | 'polygon';
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  points?: { x: number; y: number }[];
+}
+export interface FloorLayout {
+  version: 1;
+  areas: FloorArea[];
+}
 export interface FloorPlanEquipment {
   id: number;
   code: string;
@@ -11,6 +26,8 @@ export interface FloorPlanEquipment {
 }
 
 export interface FloorPlan {
+  layout?: FloorLayout | null;
+  illustrative?: boolean;
   id: number;
   name: string;
   imageUrl: string | null;

@@ -15,3 +15,19 @@ At the end of an implementation task, restart the relevant local service or serv
 # Agent instructions
 
 Read `CLAUDE.md` for repository coding conventions.
+
+## Standalone clone and active scope
+
+This repository is independently versioned. Its root `AGENTS.md`, `TEAM_WORKFLOW.md`, and `CLAUDE.md` travel with the clone and contain the applicable guidance for Codex and Claude Code. No parent workspace instructions, personal absolute paths, or sibling checkout are required. Run commands from this repository root unless stated otherwise. Read `CLAUDE.md` for repository coding conventions; verify historical inventories and roadmap notes against source before relying on them.
+
+The active UREC Live repositories are `backend` (Spring Boot API), `app` (native member client), and `admin` (staff web dashboard). Clone a companion repository separately only when the task needs it; record compatible revisions and configure its origin rather than assuming a sibling path. Work on `scheduling-experiments` and `urec-live-cv` is on hold: do not plan, modify, run, or validate either without an explicit request to resume it. Existing CV integration settings do not authorize running the CV project.
+
+The member app targets native iOS and Android only. Do not design, implement, or validate member-app desktop/browser UI, desktop responsive layouts, or web compatibility unless the user explicitly changes scope. Existing web scripts/dependencies do not change this rule. Validate member UI on a native simulator, emulator, or device. The separate admin dashboard remains a web application.
+
+## Repository quick reference
+
+- Angular 17 staff web dashboard using standalone components, reactive forms, typed services, RxJS, Material, and Tailwind. Follow `CLAUDE.md` for coding and testing conventions; keep HTTP calls in services.
+- Setup: use a compatible Node/npm toolchain and `npm ci`; run `npm start` at `http://localhost:4200`.
+- Checks: `npm run build` and relevant existing tests with `npm test -- --watch=false --browsers=ChromeHeadless` (requires Chrome/Chromium configured for Karma). Browser validation is appropriate for this dashboard.
+- API/WebSocket origins live in `src/environments/environment.ts` and `environment.prod.ts`; `angular.json` selects the production replacement. Verify current configured origins rather than assuming Railway or Render from historical notes. Avoid committing personal LAN overrides.
+- API flows require a compatible separately running backend and a local account with an accepted admin role. Verify login, affected operation, and live updates where relevant; a page response/build does not prove backend connectivity or authorization.

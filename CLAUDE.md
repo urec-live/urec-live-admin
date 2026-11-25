@@ -1,6 +1,6 @@
 ## Shared team workflow
 
-Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+Read `docs/TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
 
 # CLAUDE.md — UREC Live Admin Dashboard
 

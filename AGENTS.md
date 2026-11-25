@@ -1,6 +1,6 @@
 ## Shared team workflow
 
-Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Existing architecture and roadmap notes below may be stale; check source and stay within the current task. Do not implement roadmap items without a task requesting them.
+Read `docs/TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Existing architecture and roadmap notes below may be stale; check source and stay within the current task. Do not implement roadmap items without a task requesting them.
 
 ## Commit evidence
 
@@ -18,7 +18,7 @@ Read `CLAUDE.md` for repository coding conventions.
 
 ## Standalone clone and active scope
 
-This repository is independently versioned. Its root `AGENTS.md`, `TEAM_WORKFLOW.md`, and `CLAUDE.md` travel with the clone and contain the applicable guidance for Codex and Claude Code. No parent workspace instructions, personal absolute paths, or sibling checkout are required. Run commands from this repository root unless stated otherwise. Read `CLAUDE.md` for repository coding conventions; verify historical inventories and roadmap notes against source before relying on them.
+This repository is independently versioned. Its `AGENTS.md`, `docs/TEAM_WORKFLOW.md`, and `CLAUDE.md` travel with the clone and contain the applicable guidance for Codex and Claude Code. No parent workspace instructions, personal absolute paths, or sibling checkout are required. Run commands from this repository root unless stated otherwise. Read `CLAUDE.md` for repository coding conventions; verify historical inventories and roadmap notes against source before relying on them.
 
 The active UREC Live repositories are `backend` (Spring Boot API), `app` (native member client), and `admin` (staff web dashboard). Clone a companion repository separately only when the task needs it; record compatible revisions and configure its origin rather than assuming a sibling path. Work on `scheduling-experiments` and `urec-live-cv` is on hold: do not plan, modify, run, or validate either without an explicit request to resume it. Existing CV integration settings do not authorize running the CV project.
 

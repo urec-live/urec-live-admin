@@ -152,6 +152,36 @@ describe('ChatReportsComponent', () => {
     expect(rows[0].textContent).toContain('"not ok"');
   });
 
+  it('shows a reported photo with its caption, linked to the full size', () => {
+    const url = 'http://localhost:8080/api/messaging/media/31/raw?exp=9&sig=abc';
+    service.getGrouped.and.returnValue(of([
+      group({ messageId: 30, kind: 'IMAGE', content: 'look at this', media: { url, previewUrl: null, width: 1600, height: 1200, mediaId: 31 } }),
+      group({ messageId: 31, kind: 'IMAGE', content: '', deletedBySender: true, media: { url, previewUrl: null, width: 10, height: 10, mediaId: 32 } }),
+      group({ messageId: 32, kind: 'IMAGE', content: 'gone', media: null }),
+    ]));
+    render();
+
+    const captioned = card('COMMUNITY-30');
+    const img = captioned.querySelector('[data-testid="message-media"]') as HTMLImageElement;
+    expect(img.src).toBe(url);
+    expect(img.alt).toBe('Photo from alice');
+    const link = captioned.querySelector('[data-testid="photo-link"]') as HTMLAnchorElement;
+    expect(link.href).toBe(url);
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toContain('noopener');
+    expect(text(captioned, '[data-testid="message-caption"]')).toBe('look at this');
+
+    const noCaption = card('COMMUNITY-31');
+    expect(noCaption.querySelector('[data-testid="message-media"]')).not.toBeNull();
+    expect(noCaption.querySelector('[data-testid="message-caption"]')).toBeNull();
+    expect(noCaption.querySelector('[data-testid="deleted-tag"]')).not.toBeNull();
+
+    const missing = card('COMMUNITY-32');
+    expect(missing.querySelector('[data-testid="message-media"]')).toBeNull();
+    expect(text(missing, '[data-testid="photo-unavailable"]')).toBe('Photo unavailable');
+    expect(text(missing, '[data-testid="message-caption"]')).toBe('gone');
+  });
+
   it('removes a message after confirming, and drops it from the open list', () => {
     service.remove.and.returnValue(of(group({ removedByStaff: true, openCount: 0, reports: [report({ status: 'ACTIONED' })] })));
     render();

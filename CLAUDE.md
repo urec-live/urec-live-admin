@@ -1,6 +1,6 @@
 ## Shared team workflow
 
-Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+Read `docs/TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
 
 # CLAUDE.md — UREC Live Admin Dashboard
 
@@ -166,7 +166,7 @@ All routes except `/login` are wrapped in `ShellComponent` and protected by `Aut
 - Activity page labels `HELP_REQUESTED`, `HELP_STATUS_CHANGED`, `HELP_CLOSED`
 
 ### Chat Reports (`/chat-reports`)
-- Members report community or direct messages from the app (long press → Report). The page lists reported messages grouped by message, open first: channel, sender (and recipient for DMs), what was said or the GIF/sticker image, and each report's reason, reporter and note. It shows the original even if the sender deleted it ("Deleted by sender")
+- Members report community or direct messages from the app (long press → Report). The page lists reported messages grouped by message, open first: channel, sender (and recipient for DMs), what was said or the GIF/sticker image, and each report's reason, reporter and note. A photo (`kind` IMAGE) shows the image, linked to the full size in a new tab, with its caption under it ("Photo unavailable" if the backend sent no URL). Photo URLs expire (2 h by default), so a page left open that long needs a reload. It shows the original even if the sender deleted it ("Deleted by sender")
 - **Keep message** dismisses the open reports; **Remove message** (asks first) shows "Removed by staff" in place of the message for members, live, and marks the reports actioned. A 404/409 means another admin got there first: it says so and reloads. "Show resolved" lists closed reports too
 - `ChatReportStore` (root, started/stopped by the shell) polls `GET /api/admin/chat-reports/summary` every 30 s; the first load is a silent baseline, and later increases in open reports get a toast with **View**. `stop()` also clears `ChatReportService.summary`, since root services outlive a sign-out and the next admin would otherwise see the last one's count. The shell passes `openMessages()` to the sidebar's `chatReportsBadge` input (red badge). The label is "Chat Reports" because "Reported Messages" didn't fit next to a 2-digit badge (`shell-sidebar-layout.spec.ts` checks)
 - Activity page labels `CHAT_MESSAGE_REPORTED`, `CHAT_REPORT_DISMISSED`, `CHAT_MESSAGE_REMOVED`
@@ -243,7 +243,7 @@ npx ng test --watch=false --browsers=ChromeHeadless   # Karma + Jasmine
 - Keep component styles small (`anyComponentStyle` budget: 6kb warning / 10kb error) — prefer Tailwind utilities
 - Karma loads the app's global styles (Material theme + Tailwind), so layout bugs can be tested by measuring rendered elements (`getBoundingClientRect`, `scrollWidth`); see `shell-sidebar-layout.spec.ts`. Roboto isn't loaded in tests, but the fallback font measures within a pixel for the sidebar labels
 - Specs can't import `WebsocketService` (or `LiveMonitorComponent`): `sockjs-client` references Node's `global`, which isn't defined in the browser. The same bare `global` ships in the production Live Monitor bundle, so that page likely crashes on load until `window.global = window` is defined
-- Testing guides: `EQUIPMENT_ISSUES_TESTING.md`, `HELP_REQUESTS_TESTING.md`, `BACKEND_UNREACHABLE_TESTING.md` and `CHAT_MEDIA_TESTING.md`
+- Testing guides: `EQUIPMENT_ISSUES_TESTING.md`, `HELP_REQUESTS_TESTING.md`, `BACKEND_UNREACHABLE_TESTING.md`, `CHAT_MEDIA_TESTING.md` and `CHAT_PHOTOS_TESTING.md`
 
 ---
 

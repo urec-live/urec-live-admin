@@ -4,7 +4,7 @@ Angular 17 staff dashboard for UREC Live. It manages equipment, exercises, users
 
 ## Before you start
 
-Read `TEAM_WORKFLOW.md` and `CLAUDE.md`. The backend must be running for API, auth, and WebSocket flows.
+Read `docs/TEAM_WORKFLOW.md` and `CLAUDE.md`. The backend must be running for API, auth, and WebSocket flows.
 
 ```bash
 npm ci

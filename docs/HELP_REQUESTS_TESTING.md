@@ -15,7 +15,7 @@ How it fits together:
 - The first load after sign-in is a silent baseline. Only requests that arrive after it ring.
 - `ChimeService` synthesises the chime with Web Audio, so there's no sound file. Browsers block audio until the page has had a click or keypress, so the first interaction unlocks it. Muting is remembered in `localStorage`.
 
-The full walkthrough across backend, admin, and app is in [`../backend/HELP_REQUESTS_TESTING.md`](../backend/HELP_REQUESTS_TESTING.md).
+The full walkthrough across backend, admin, and app is in [`../../urec-live-backend/docs/HELP_REQUESTS_TESTING.md`](../../urec-live-backend/docs/HELP_REQUESTS_TESTING.md).
 
 ## Automated tests
 
